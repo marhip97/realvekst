@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Virtuelle miljøer
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Dataprosessering — kun rådata sjekkes inn, ikke prosesserte filer
+data/processed/*
+!data/processed/.gitkeep
+
+# Sensitive eksporter
+*.tmp
