@@ -13,12 +13,16 @@ Sist oppdatert: 2026-05-13
   - bevilgning_2020_2026.xlsx
   - deflatorer.csv
 - Designprinsipper dokumentert i docs/design/01-principles.md
-- Prototype av datalag overført til src/data/bevilgning.py med tester i tests/test_bevilgning.py
+- Datalag og analyselag implementert: src/data/bevilgning.py, deflator.py; src/analyse/realvekst.py, aggregering.py, brudd.py med tester
+- Datasett-generator src/data/bygg_datasett.py som skriver oversikt + per-departement JSON til src/dashboard/data/
+- Frontend (PR #9): drilldown nivå 0-3 i src/dashboard/index.html, styles.css, dashboard.js
+- GitHub Pages-deploy stabilisert (PR #10): workflow trigges ved alle push til main + debug-log av opplastede filer
+- Plotly-script lastes nå riktig (PR #11): feilaktig SRI-hash fjernet
+- Dashbord live og verifisert fungerende av bruker
 
 ## Hva er under arbeid
 
-- Fase 2 fortsetter: src/data/deflator.py (kumulativ indeks)
-- Fase 3 forberedes: src/analyse/realvekst.py, aggregering.py, brudd.py
+- Ingenting akutt
 
 ## Hva er blokkert
 
@@ -26,12 +30,11 @@ Sist oppdatert: 2026-05-13
 
 ## Neste konkrete steg
 
-1. PR `feature/datalag-bevilgning`: verifisere at tests/test_bevilgning.py passerer mot rådata, justere ved behov
-2. PR `feature/datalag-deflator`: implementere src/data/deflator.py med kumulativ indeks og tester
-3. PR `feature/analyse-realvekst`: src/analyse/realvekst.py med deflator-anvendelse basert på postnummer
-4. PR `feature/analyse-hierarki`: aggregering på alle nivåer og bruddmarkering
-5. PR `feature/designsystem`: docs/design/02-*, 03-*, src/dashboard/tokens.css
-6. PR `feature/frontend-dashboard`: index.html, styles.css, dashboard.js (kan deles)
+1. Legge tilbake verifisert SRI-hash på Plotly-script (hentes fra cdn.plot.ly og legges inn i index.html)
+2. Filter-funksjonalitet (post-type multivalg, tekstsøk, realvekst-terskel, periode/basisår)
+3. URL-tilstand for navigasjons- og filtervalg
+4. Bruddmarkering i UI for departementer/programområder/poster med strukturelle brudd
+5. WCAG-revisjon: skip-link, ARIA, fokusindikatorer, prefers-reduced-motion, tabellalternativ for grafer
 
 ## Validerte referansetall (fra prototypen)
 
