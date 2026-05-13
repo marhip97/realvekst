@@ -65,6 +65,20 @@ function endringsklasse(pst) {
   return "";
 }
 
+function bruddBadgeHtml({ liten = false, beskrivelse = "" } = {}) {
+  // Varseltrekant-SVG som markerer strukturelt brudd. Inline for aa
+  // unngaa ekstra HTTP-request og for at den arver currentColor fra CSS.
+  const klasse = liten ? "brudd-badge brudd-badge--liten" : "brudd-badge";
+  const tittel = beskrivelse
+    ? `Strukturelt brudd: ${beskrivelse}`
+    : "Strukturelt brudd";
+  const ikonSvg = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2 1 21h22L12 2zm0 6 7.5 13h-15L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>`;
+  const tekst = liten ? "" : `<span>Brudd</span>`;
+  return `<span class="${klasse}" role="img" aria-label="${escapeHtml(
+    tittel
+  )}" title="${escapeHtml(tittel)}">${ikonSvg}${tekst}</span>`;
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
@@ -322,27 +336,31 @@ function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) 
 // --- Brodsmulesti ---
 
 function renderBrodsmule(steg) {
-  // steg = [{tekst, url|null}]; siste har url=null og er aria-current
+  // steg = [{tekst, url|null, brudd?}]; siste har url=null og er aria-current.
+  // brudd=true viser et lite varseltrekant-ikon ved siden av teksten.
   const nav = document.getElementById("brodsmule");
   if (!nav) return;
   const ol = nav.querySelector("ol");
   ol.innerHTML = "";
   for (const [i, s] of steg.entries()) {
     const li = document.createElement("li");
+    const badgeHtml = s.brudd ? bruddBadgeHtml({ liten: true }) : "";
     if (i === steg.length - 1) {
       li.setAttribute("aria-current", "page");
-      li.textContent = s.tekst;
+      li.innerHTML = `${escapeHtml(s.tekst)}${badgeHtml}`;
     } else {
       const a = document.createElement("a");
       a.href = s.url;
-      a.textContent = s.tekst;
+      a.innerHTML = `${escapeHtml(s.tekst)}${badgeHtml}`;
       a.addEventListener("click", (e) => {
         e.preventDefault();
         // Konverter url tilbake til state
         const u = new URL(s.url, window.location.origin);
         const state = {
           dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
-          po: u.searchParams.get("po") || null,
+          po: u.searchParams.get("po")
+            ? parseInt(u.searchParams.get("po"), 10)
+            : null,
           post: u.searchParams.get("post")
             ? parseInt(u.searchParams.get("post"), 10)
             : null,
@@ -541,7 +559,7 @@ async function visNiva1(dep_id) {
   const dep = data.departement;
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
-    { tekst: dep.navn, url: null },
+    { tekst: dep.navn, url: null, brudd: dep.har_strukturelt_brudd },
   ]);
 
   const { q, pt } = lesUrlTilstand();
@@ -661,7 +679,11 @@ async function visNiva2(dep_id, po_nr) {
 
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
-    { tekst: dep.navn, url: lagUrl({ dep: dep_id }) },
+    {
+      tekst: dep.navn,
+      url: lagUrl({ dep: dep_id }),
+      brudd: dep.har_strukturelt_brudd,
+    },
     { tekst: `${po.nr} ${po.navn}`, url: null },
   ]);
 
@@ -754,7 +776,11 @@ async function visNiva3(dep_id, po_nr, post_id) {
 
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
-    { tekst: dep.navn, url: lagUrl({ dep: dep_id }) },
+    {
+      tekst: dep.navn,
+      url: lagUrl({ dep: dep_id }),
+      brudd: dep.har_strukturelt_brudd,
+    },
     { tekst: `${po.nr} ${po.navn}`, url: lagUrl({ dep: dep_id, po: po_nr }) },
     { tekst: post.post_navn, url: null },
   ]);
@@ -821,16 +847,28 @@ function tellPoster(programomraader) {
 
 function depTabell(departementer) {
   const rader = departementer
-    .map(
-      (d) => `
+    .map((d) => {
+      const badge = d.har_strukturelt_brudd
+        ? bruddBadgeHtml({ liten: true, beskrivelse: d.brudd_beskrivelse || "" })
+        : "";
+      const realvekstCelle =
+        d.realvekst_pst === null
+          ? `<span class="mangler-data" title="Mangler endepunkt for sammenligning">—</span>`
+          : formaterProsent(d.realvekst_pst);
+      const merknad = d.har_strukturelt_brudd
+        ? `<span class="mangler-data">${escapeHtml(
+            d.brudd_beskrivelse || "Strukturelt brudd"
+          )}</span>`
+        : "";
+      return `
     <tr>
-      <th scope="row"><a href="${lagUrl({ dep: d.id })}" data-naviger-dep="${d.id}">${escapeHtml(d.navn)}</a></th>
-      <td class="tall-kol">${d.realvekst_pst === null ? "—" : formaterProsent(d.realvekst_pst)}</td>
+      <th scope="row"><a href="${lagUrl({ dep: d.id })}" data-naviger-dep="${d.id}">${escapeHtml(d.navn)}</a>${badge}</th>
+      <td class="tall-kol">${realvekstCelle}</td>
       <td class="tall-kol">${formaterMrd(d.reell_start)}</td>
       <td class="tall-kol">${formaterMrd(d.reell_slutt)}</td>
-      <td>${d.har_strukturelt_brudd ? "Strukturelt brudd" : ""}</td>
-    </tr>`
-    )
+      <td>${merknad}</td>
+    </tr>`;
+    })
     .join("");
   return `
     <table>
@@ -851,14 +889,18 @@ function depTabell(departementer) {
 
 function poTabell(programomraader, dep_id) {
   const rader = programomraader
-    .map(
-      (po) => `
+    .map((po) => {
+      const realvekstCelle =
+        po.realvekst_pst === null
+          ? `<span class="mangler-data" title="Mangler endepunkt for sammenligning">—</span>`
+          : formaterProsent(po.realvekst_pst);
+      return `
     <tr>
       <th scope="row"><a href="${lagUrl({ dep: dep_id, po: po.nr })}" data-naviger-po="${po.nr}">${po.nr} ${escapeHtml(po.navn)}</a></th>
-      <td class="tall-kol">${formaterProsent(po.realvekst_pst)}</td>
+      <td class="tall-kol">${realvekstCelle}</td>
       <td class="tall-kol">${po.poster.length}</td>
-    </tr>`
-    )
+    </tr>`;
+    })
     .join("");
   return `
     <table>
@@ -876,18 +918,22 @@ function poTabell(programomraader, dep_id) {
 
 function posterTabell(poster, dep_id, po_nr) {
   const rader = poster
-    .map(
-      (p) => `
+    .map((p) => {
+      const realvekstCelle =
+        p.realvekst_pst === null
+          ? `<span class="mangler-data" title="Mangler endepunkt for sammenligning">—</span>`
+          : formaterProsent(p.realvekst_pst);
+      return `
     <tr>
       <th scope="row">
         <a href="${lagUrl({ dep: dep_id, po: po_nr, post: p.post_id })}">
           kap. ${p.kapittel_nr} post ${String(p.post_nr).padStart(2, "0")} – ${escapeHtml(p.post_navn)}
         </a>
       </th>
-      <td class="tall-kol">${formaterProsent(p.realvekst_pst)}</td>
+      <td class="tall-kol">${realvekstCelle}</td>
       <td>${p.deflator_type === "kommunal" ? "Kommunal" : "Statlig"}</td>
-    </tr>`
-    )
+    </tr>`;
+    })
     .join("");
   return `
     <table>
@@ -934,8 +980,8 @@ function tidsserieTabell(tidsserie, alltidSynlig = false) {
 function bruddAdvarselHtml(dep) {
   return `
     <aside class="brudd-advarsel" role="note">
-      <strong>Strukturelt brudd:</strong>
-      ${escapeHtml(dep.brudd_beskrivelse || "Departementet har en omorganisering som gjør tidsserien upålitelig.")}
+      ${bruddBadgeHtml({ liten: false, beskrivelse: dep.brudd_beskrivelse || "" })}
+      <span>${escapeHtml(dep.brudd_beskrivelse || "Departementet har en omorganisering som gjør tidsserien upålitelig.")}</span>
     </aside>
   `;
 }
