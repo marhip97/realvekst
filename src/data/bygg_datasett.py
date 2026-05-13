@@ -4,9 +4,18 @@ Denne modulen er broen mellom analyselaget (pandas) og frontend (statisk
 JavaScript). Den genererer JSON-filer som dashbordet i src/dashboard/
 laster via fetch og rendrer med Plotly.js.
 
+Filstruktur som genereres:
+
+- `data/oversikt.json` — alle 16 departementer med nøkkeltall (nivå 0)
+- `data/departementer/{id}.json` — én fil per departement med fullt
+  hierarki (programområder med tidsserie og poster med tidsserie).
+  Inneholder alt frontend trenger for å vise nivå 1, 2 og 3 under
+  det departementet uten å laste flere filer.
+
 Designvalg:
-- Vi genererer én JSON per visningsnivå/oversikt, ikke ett gigantisk
-  datasett. Det holder hver enkelt fil liten og rask å parse i nettleser.
+- Vi genererer én fil per departement, ikke per post. Det holder antall
+  filer håndterbart (16) samtidig som hver enkelt fil er rask å laste
+  (50–300 KB).
 - Tallene oppgis i NOK (ikke MNOK eller GNOK) for å unngå avrundingsfeil.
   Frontend formaterer til mrd/mill ved presentasjon.
 - Metadata-blokken dokumenterer basisår, periode og genereringstidspunkt.
@@ -25,10 +34,11 @@ import pandas as pd
 
 from src.analyse.aggregering import (
     aggreger_per_departement,
+    aggreger_per_programomraade,
     realvekst_for_periode,
 )
 from src.analyse.brudd import marker_brudd_departement
-from src.analyse.realvekst import beregn_reell_bevilgning
+from src.analyse.realvekst import beregn_reell_bevilgning, realvekst_prosent
 from src.data.bevilgning import last_bevilgning
 
 # Frontend leser fra src/dashboard/data/. Skrivebanen er relativ til
@@ -45,6 +55,40 @@ def _aarskolonne(df: pd.DataFrame) -> str:
     return "Ar" if "Ar" in df.columns else "År"
 
 
+def _til_jsonfloat(verdi) -> float | None:
+    """Konverter NaN/None til JSON-vennlig None, ellers float."""
+    if verdi is None or (isinstance(verdi, float) and verdi != verdi):
+        return None
+    return float(verdi)
+
+
+def _tidsserie_fra_aggregert(
+    aggregert: pd.DataFrame, aar_kol: str = "Ar"
+) -> list[dict[str, Any]]:
+    """Konverter aggregert tabell til en liste tidsseriepunkter."""
+    return [
+        {
+            "ar": int(r[aar_kol]),
+            "nominell": _til_jsonfloat(r["nominell"]),
+            "reell": _til_jsonfloat(r["reell"]),
+        }
+        for _, r in aggregert.sort_values(aar_kol).iterrows()
+    ]
+
+
+def _realvekst_fra_tidsserie(
+    tidsserie: list[dict[str, Any]], start: int, slutt: int
+) -> float | None:
+    """Beregn realvekst-prosent fra en tidsserie hvis begge endepunkt finnes."""
+    start_p = next((p for p in tidsserie if p["ar"] == start), None)
+    slutt_p = next((p for p in tidsserie if p["ar"] == slutt), None)
+    if not start_p or not slutt_p:
+        return None
+    if start_p["reell"] is None or slutt_p["reell"] is None:
+        return None
+    return _til_jsonfloat(realvekst_prosent(start_p["reell"], slutt_p["reell"]))
+
+
 def bygg_oversikt(
     basisaar: int = DEFAULT_BASISAAR,
     start: int = DEFAULT_START,
@@ -55,7 +99,7 @@ def bygg_oversikt(
     Returnerer en dict klar for json.dump:
     - metadata: basisår, periode, generert-tidsstempel, kilde
     - departementer: liste med navn, nøkkeltall og full tidsserie per
-      departement, sortert synkende på realvekst
+      departement, sortert synkende på realvekst (brudd nederst)
     """
     bev = last_bevilgning()
     bev_reell = beregn_reell_bevilgning(bev, basisaar=basisaar)
@@ -75,16 +119,8 @@ def bygg_oversikt(
         dep_id = int(rad["Fagdepartement_id"])
         navn = rad["Fagdepartement"]
         tidsserie_rader = dep[dep["Fagdepartement_id"] == dep_id].sort_values(aar_kol)
-        tidsserie = [
-            {
-                "ar": int(r[aar_kol]),
-                "nominell": float(r["nominell"]),
-                "reell": float(r["reell"]),
-            }
-            for _, r in tidsserie_rader.iterrows()
-        ]
-        # Brudd-info hentes fra én tilfeldig rad - flagget er likt for hele
-        # departementet
+        tidsserie = _tidsserie_fra_aggregert(tidsserie_rader, aar_kol)
+
         brudd_rad = dep[dep["Fagdepartement_id"] == dep_id].iloc[0]
         har_brudd = bool(brudd_rad["har_strukturelt_brudd"])
         brudd_beskrivelse = (
@@ -108,7 +144,6 @@ def bygg_oversikt(
             }
         )
 
-    # Sorter synkende på realvekst, men plasser brudd nederst
     departementer.sort(
         key=lambda d: (
             d["har_strukturelt_brudd"],
@@ -117,33 +152,172 @@ def bygg_oversikt(
     )
 
     return {
-        "metadata": {
-            "basisaar": basisaar,
-            "start": start,
-            "slutt": slutt,
-            "generert": datetime.now(UTC).isoformat(timespec="seconds"),
-            "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer",
-        },
+        "metadata": _metadata(basisaar, start, slutt),
         "departementer": departementer,
     }
 
 
-def _til_jsonfloat(verdi) -> float | None:
-    """Konverter NaN/None til JSON-vennlig None, ellers float."""
-    if verdi is None or (isinstance(verdi, float) and verdi != verdi):
-        return None
-    return float(verdi)
+def _metadata(basisaar: int, start: int, slutt: int) -> dict[str, Any]:
+    return {
+        "basisaar": basisaar,
+        "start": start,
+        "slutt": slutt,
+        "generert": datetime.now(UTC).isoformat(timespec="seconds"),
+        "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer",
+    }
+
+
+def bygg_departement(
+    bev_reell: pd.DataFrame,
+    dep_id: int,
+    basisaar: int = DEFAULT_BASISAAR,
+    start: int = DEFAULT_START,
+    slutt: int = DEFAULT_SLUTT,
+) -> dict[str, Any]:
+    """Produser en komplett hierarkifil for ett departement.
+
+    Strukturen inkluderer departementets tidsserie, alle programområder
+    under departementet (med egen tidsserie) og alle poster under hvert
+    programområde (med tidsserie og deflator-info). Frontend laster denne
+    filen én gang og navigerer mellom nivå 1, 2 og 3 lokalt.
+    """
+    aar_kol = _aarskolonne(bev_reell)
+    dep_data = bev_reell[bev_reell["Fagdepartement_id"] == dep_id]
+    if dep_data.empty:
+        raise ValueError(f"Ingen rader for departement-id {dep_id}")
+
+    dep_navn = dep_data["Fagdepartement"].iloc[0]
+
+    # Departementets tidsserie
+    dep_serie = (
+        dep_data.groupby(aar_kol, as_index=False)
+        .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
+        .rename(columns={aar_kol: "Ar"})
+    )
+    dep_tidsserie = _tidsserie_fra_aggregert(dep_serie)
+
+    # Brudd-info
+    dep_med_brudd = marker_brudd_departement(
+        pd.DataFrame({"Fagdepartement": [dep_navn]})
+    )
+    har_brudd = bool(dep_med_brudd["har_strukturelt_brudd"].iloc[0])
+    brudd_beskrivelse = dep_med_brudd["brudd_beskrivelse"].iloc[0] if har_brudd else None
+
+    # Programområder under departementet
+    po_agg = aggreger_per_programomraade(dep_data)
+    programomraader = []
+    for (po_nr, po_navn), gr in po_agg.groupby(
+        ["Programområde_nr", "Programområde"], sort=False
+    ):
+        po_tidsserie = _tidsserie_fra_aggregert(gr.sort_values("Ar"))
+        po_realvekst = _realvekst_fra_tidsserie(po_tidsserie, start, slutt)
+
+        # Poster under dette programområdet
+        po_rader = dep_data[dep_data["Programområde_nr"] == po_nr]
+        poster = []
+        post_grupper = po_rader.groupby(
+            [
+                "Post_id",
+                "Post",
+                "kapittel_nr",
+                "Kapittel",
+                "post_nr",
+                "Post_type",
+                "deflator_type",
+            ],
+            sort=False,
+        )
+        for nokler, post_rader in post_grupper:
+            (
+                post_id,
+                post_navn,
+                kap_nr,
+                kap_navn,
+                post_nr,
+                post_type,
+                defl_type,
+            ) = nokler
+            post_serie_rader = post_rader.sort_values(aar_kol)
+            post_tidsserie = [
+                {
+                    "ar": int(r[aar_kol]),
+                    "nominell": _til_jsonfloat(r["Bevilgning_beløp"]),
+                    "reell": _til_jsonfloat(r["Bevilgning_reell"]),
+                }
+                for _, r in post_serie_rader.iterrows()
+            ]
+            post_realvekst = _realvekst_fra_tidsserie(post_tidsserie, start, slutt)
+
+            poster.append(
+                {
+                    "post_id": int(post_id),
+                    "post_navn": post_navn,
+                    "post_nr": int(post_nr),
+                    "kapittel_nr": int(kap_nr),
+                    "kapittel": kap_navn,
+                    "post_type": post_type,
+                    "deflator_type": defl_type,
+                    "realvekst_pst": post_realvekst,
+                    "tidsserie": post_tidsserie,
+                }
+            )
+
+        # Sorter poster synkende på reell i sluttåret
+        poster.sort(
+            key=lambda p: next(
+                (
+                    t["reell"]
+                    for t in p["tidsserie"]
+                    if t["ar"] == slutt and t["reell"] is not None
+                ),
+                0.0,
+            ),
+            reverse=True,
+        )
+
+        programomraader.append(
+            {
+                "nr": po_nr,
+                "navn": po_navn,
+                "realvekst_pst": po_realvekst,
+                "tidsserie": po_tidsserie,
+                "poster": poster,
+            }
+        )
+
+    # Sorter programområder etter nummer for stabilitet
+    programomraader.sort(key=lambda p: p["nr"])
+
+    dep_realvekst = _realvekst_fra_tidsserie(dep_tidsserie, start, slutt)
+
+    return {
+        "metadata": _metadata(basisaar, start, slutt),
+        "departement": {
+            "id": dep_id,
+            "navn": dep_navn,
+            "realvekst_pst": dep_realvekst,
+            "har_strukturelt_brudd": har_brudd,
+            "brudd_beskrivelse": brudd_beskrivelse,
+            "tidsserie": dep_tidsserie,
+        },
+        "programomraader": programomraader,
+    }
 
 
 def skriv_alle(utfolder: Path = DASHBOARD_DATA) -> list[Path]:
     """Generér og skriv alle JSON-filer for frontend.
 
-    Returnerer listen over skrevne filer. Bruker pretty-print for
-    leselighet i git-diff; filene er små nok at det ikke koster noe.
+    Skriver oversikt.json + én fil per departement i departementer/.
+    Returnerer listen over skrevne filer.
     """
     utfolder.mkdir(parents=True, exist_ok=True)
+    (utfolder / "departementer").mkdir(exist_ok=True)
     skrevne = []
 
+    # Forbered én gang og gjenbruk
+    bev_reell = beregn_reell_bevilgning(last_bevilgning())
+
+    # Oversikt
     oversikt = bygg_oversikt()
     sti = utfolder / "oversikt.json"
     sti.write_text(
@@ -151,10 +325,25 @@ def skriv_alle(utfolder: Path = DASHBOARD_DATA) -> list[Path]:
         encoding="utf-8",
     )
     skrevne.append(sti)
+
+    # Per-departement-filer. Kompakt JSON (uten innrykk) fordi filene er
+    # store og diffs blir uleselige uansett — fokus er rask nedlasting.
+    dep_ider = sorted(bev_reell["Fagdepartement_id"].unique())
+    for dep_id in dep_ider:
+        data = bygg_departement(bev_reell, dep_id=int(dep_id))
+        sti = utfolder / "departementer" / f"{int(dep_id)}.json"
+        sti.write_text(
+            json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        skrevne.append(sti)
+
     return skrevne
 
 
 if __name__ == "__main__":
     filer = skriv_alle()
+    total = sum(f.stat().st_size for f in filer)
     for f in filer:
         print(f"Skrev {f.relative_to(PROSJEKT_ROT)} ({f.stat().st_size:,} bytes)")
+    print(f"Totalt: {total:,} bytes i {len(filer)} filer")

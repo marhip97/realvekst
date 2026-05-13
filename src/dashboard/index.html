@@ -29,91 +29,15 @@
         statsbudsjettets hierarki: departement, programområde og post.
       </p>
 
-      <nav aria-label="Brødsmulesti" class="brodsmule">
+      <nav aria-label="Brødsmulesti" class="brodsmule" id="brodsmule">
         <ol>
           <li aria-current="page">Alle departementer</li>
         </ol>
       </nav>
     </header>
 
-    <main id="hovedinnhold">
-      <section class="kpi-rad" aria-labelledby="kpi-tittel">
-        <h2 id="kpi-tittel" class="visuelt-skjult">Nøkkeltall</h2>
-        <article class="kpi" data-variant="standard">
-          <p class="kpi__etikett">Periode</p>
-          <p class="kpi__tall"><span id="kpi-periode" class="tall">—</span></p>
-          <p class="kpi__beskrivelse" id="kpi-periode-beskrivelse"></p>
-        </article>
-        <article class="kpi" data-variant="standard">
-          <p class="kpi__etikett">Departementer i utvalget</p>
-          <p class="kpi__tall"><span id="kpi-antall" class="tall">—</span></p>
-          <p class="kpi__beskrivelse">Inkluderer strukturelle brudd</p>
-        </article>
-        <article class="kpi" data-variant="standard">
-          <p class="kpi__etikett">Høyeste realvekst</p>
-          <p class="kpi__tall"><span id="kpi-hoyest-pst" class="tall">—</span></p>
-          <p class="kpi__beskrivelse" id="kpi-hoyest-navn"></p>
-        </article>
-        <article class="kpi" data-variant="standard">
-          <p class="kpi__etikett">Laveste realvekst (uten brudd)</p>
-          <p class="kpi__tall"><span id="kpi-lavest-pst" class="tall">—</span></p>
-          <p class="kpi__beskrivelse" id="kpi-lavest-navn"></p>
-        </article>
-      </section>
-
-      <section class="toppliste" aria-labelledby="toppliste-tittel">
-        <header class="seksjon-header">
-          <h2 id="toppliste-tittel">Realvekst per departement</h2>
-          <p class="seksjon-beskrivelse">
-            Sortert synkende på realvekst i reelle 2024-kroner. Departementer med strukturelle
-            brudd er markert og plassert nederst.
-          </p>
-        </header>
-
-        <figure aria-describedby="toppliste-metode">
-          <div
-            id="toppliste-graf"
-            class="graf"
-            role="img"
-            aria-label="Horisontal stolpegraf med realvekst per departement"
-          ></div>
-          <details class="tabell-alternativ">
-            <summary>Vis som tabell</summary>
-            <table id="toppliste-tabell">
-              <caption class="visuelt-skjult">
-                Realvekst per departement 2014–2026 i prosent
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Departement</th>
-                  <th scope="col" class="tall-kol">Realvekst (pst.)</th>
-                  <th scope="col" class="tall-kol">Reell 2014 (mrd. kr)</th>
-                  <th scope="col" class="tall-kol">Reell 2026 (mrd. kr)</th>
-                  <th scope="col">Merknad</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </details>
-          <figcaption id="toppliste-metode" class="metode-merknad">
-            Reell bevilgning beregnes ved kumulativ prisindeks med basisår 2024. Postnummer 60–69
-            bruker kommunal deflator; øvrige bruker statsbudsjettets utgiftsdeflator. Strukturelle
-            brudd (omorganiseringer) gjør at realvekst over hele perioden ikke kan tolkes for de
-            markerte departementene.
-          </figcaption>
-        </figure>
-      </section>
-
-      <section class="brudd-seksjon" aria-labelledby="brudd-tittel" id="brudd-seksjon" hidden>
-        <header class="seksjon-header">
-          <h2 id="brudd-tittel">Strukturelle brudd</h2>
-          <p class="seksjon-beskrivelse">
-            Disse departementene har omorganiseringer eller mangler historikk. Realvekst-tall for
-            hele perioden kan ikke tolkes direkte.
-          </p>
-        </header>
-        <ul class="brudd-liste" id="brudd-liste"></ul>
-      </section>
+    <main id="hovedinnhold" aria-live="polite" aria-busy="true">
+      <p class="laster">Laster data …</p>
     </main>
 
     <footer class="side-footer">

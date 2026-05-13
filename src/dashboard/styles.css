@@ -282,3 +282,132 @@ code {
   border-radius: var(--radius-s);
   font-size: 0.95em;
 }
+
+/* ---- Brodsmulesti lenker ---- */
+
+.brodsmule a {
+  color: var(--farge-lenke);
+}
+
+.brodsmule a:hover {
+  color: var(--farge-lenke-hover);
+}
+
+/* ---- Tidsserie-seksjon ---- */
+
+.tidsserie-seksjon {
+  margin-block-end: var(--avstand-2xl);
+}
+
+/* ---- Metadata-blokk ---- */
+
+.metadata-blokk {
+  background: var(--farge-overflate);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--kpi-padding);
+  margin-block-end: var(--avstand-xl);
+}
+
+.metadata {
+  display: grid;
+  gap: var(--avstand-m);
+  grid-template-columns: 1fr;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .metadata {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .metadata {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.metadata > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--avstand-2xs);
+}
+
+.metadata dt {
+  font-size: var(--font-storrelse-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--farge-tekst-dempet);
+  font-weight: var(--font-vekt-medium);
+}
+
+.metadata dd {
+  margin: 0;
+  font-size: var(--font-storrelse-s);
+  color: var(--farge-tekst);
+}
+
+/* ---- Brudd-advarsel (inline) ---- */
+
+.brudd-advarsel {
+  background: var(--farge-advarsel-svak);
+  border-inline-start: 4px solid var(--farge-advarsel);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-m) var(--avstand-l);
+  margin-block-end: var(--avstand-xl);
+  font-size: var(--font-storrelse-s);
+}
+
+.brudd-advarsel strong {
+  color: var(--farge-advarsel);
+}
+
+/* ---- Endring-farger paa KPI-tall ---- */
+
+.endring--positiv {
+  color: var(--farge-positiv);
+}
+
+.endring--negativ {
+  color: var(--farge-negativ);
+}
+
+/* ---- Tabell-lenker (drilldown) ---- */
+
+.tabell-alternativ tbody a {
+  color: var(--farge-lenke);
+  text-decoration: none;
+}
+
+.tabell-alternativ tbody a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Lasting og feilvisning ---- */
+
+.laster,
+.ikke-funnet {
+  background: var(--farge-overflate);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-l);
+  text-align: center;
+  color: var(--farge-tekst-dempet);
+}
+
+.ikke-funnet h2 {
+  color: var(--farge-tekst);
+  margin-block-start: 0;
+}
+
+/* ---- Klikk-affordans paa graf ---- */
+
+.graf {
+  cursor: pointer;
+}
+
+.graf:focus-within {
+  border-color: var(--farge-kant-fokus);
+}
+
