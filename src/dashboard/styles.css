@@ -357,10 +357,13 @@ code {
   padding: var(--avstand-m) var(--avstand-l);
   margin-block-end: var(--avstand-xl);
   font-size: var(--font-storrelse-s);
+  display: flex;
+  align-items: center;
+  gap: var(--avstand-m);
 }
 
-.brudd-advarsel strong {
-  color: var(--farge-advarsel);
+.brudd-advarsel .brudd-badge {
+  margin-inline-start: 0;
 }
 
 /* ---- Endring-farger paa KPI-tall ---- */
@@ -531,4 +534,57 @@ code {
 .filter-tom-state h3 {
   margin: 0 0 var(--avstand-xs);
   color: var(--farge-tekst);
+}
+
+/* ---- Brudd-badge ---- */
+/*
+ * Liten varseltrekant som markerer at en enhet har strukturelt brudd
+ * (omorganisering, splitt eller sammenslaaing). Plasseres ved siden av
+ * navnet hvor enheten omtales. SVG-ikonet er inline i HTML, denne
+ * regelen styler farge, stoerrelse og avstand.
+ */
+
+.brudd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avstand-2xs);
+  margin-inline-start: var(--avstand-xs);
+  padding: 0 var(--avstand-xs);
+  height: 1.4em;
+  border-radius: var(--radius-s);
+  background: var(--farge-advarsel-svak);
+  color: var(--farge-advarsel);
+  font-size: var(--font-storrelse-2xs);
+  font-weight: var(--font-vekt-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.brudd-badge svg {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.brudd-badge--liten {
+  /* For tabellrader og brodsmulesti: bare ikon, ingen tekst */
+  padding: 0;
+  background: transparent;
+  height: auto;
+  font-size: var(--font-storrelse-s);
+}
+
+.brudd-badge--liten svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Manglende-data-markering: mildere enn brudd, gir leseren et hint
+   om at realvekst-tallet ikke kan beregnes (mangler endepunkt). */
+.mangler-data {
+  color: var(--farge-tekst-dempet);
+  font-style: italic;
 }
