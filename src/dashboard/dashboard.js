@@ -1,21 +1,21 @@
 /*
- * Dashbord-renderer for nivå 0 (alle departementer).
+ * Dashbord-router og rendrere for niv 0-3.
  *
- * Henter data/oversikt.json og rendrer:
- *   - KPI-rad med nøkkeltall
- *   - Horisontal toppliste-graf via Plotly
- *   - Tabell-alternativ for skjermleser
- *   - Brudd-seksjon med fagligfaglig forklaring per markert departement
- *   - Tidsstempel for datagenerering i footer
+ * URL-parametre styrer hvilket niv som vises:
+ *   /                         niv 0 (alle departementer)
+ *   ?dep=10                   niv 1 (ett departement)
+ *   ?dep=10&po=04             niv 2 (ett programomraade)
+ *   ?dep=10&po=04&post=174001 niv 3 (en post)
  *
- * Alle visuelle valg leses fra CSS-tokens via getComputedStyle, slik at
- * Plotly-tema automatisk følger tokens.css. Tall formateres på norsk
- * konvensjon (komma som desimaltegn, ikke-brytende mellomrom).
+ * Alle visuelle valg leses fra CSS-tokens via getComputedStyle.
+ * Tall formateres paa norsk konvensjon (komma desimaltegn, ikke-brytende
+ * mellomrom mellom tall og enhet).
  */
 
 "use strict";
 
-const SI_KONVERTERER = 1e9; // NOK -> mrd. kr
+const SI_NOK_TIL_MRD = 1e9;
+const SI_NOK_TIL_MILL = 1e6;
 
 // --- Hjelpere ---
 
@@ -25,11 +25,28 @@ function lesCssToken(navn) {
 
 function formaterMrd(nok) {
   if (nok === null || nok === undefined) return "—";
-  const mrd = nok / SI_KONVERTERER;
+  const mrd = nok / SI_NOK_TIL_MRD;
   return mrd.toLocaleString("nb-NO", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+}
+
+function formaterMill(nok) {
+  if (nok === null || nok === undefined) return "—";
+  const mill = nok / SI_NOK_TIL_MILL;
+  return mill.toLocaleString("nb-NO", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+function formaterBeloep(nok) {
+  if (nok === null || nok === undefined) return "—";
+  if (Math.abs(nok) >= SI_NOK_TIL_MRD) {
+    return `${formaterMrd(nok)} mrd. kr`;
+  }
+  return `${formaterMill(nok)} mill. kr`;
 }
 
 function formaterProsent(pst) {
@@ -41,202 +58,773 @@ function formaterProsent(pst) {
   })} %`;
 }
 
-function settTekst(id, tekst) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = tekst;
+function endringsklasse(pst) {
+  if (pst === null || pst === undefined) return "";
+  if (pst > 0.05) return "endring--positiv";
+  if (pst < -0.05) return "endring--negativ";
+  return "";
 }
 
-// --- KPI-rad ---
-
-function renderKpiRad(data) {
-  const { metadata, departementer } = data;
-
-  settTekst("kpi-periode", `${metadata.start}–${metadata.slutt}`);
-  settTekst(
-    "kpi-periode-beskrivelse",
-    `Realvekst i ${metadata.basisaar}-kroner`
-  );
-
-  settTekst("kpi-antall", String(departementer.length));
-
-  // Høyeste og laveste blant departementer UTEN strukturelt brudd
-  const sammenlignbare = departementer.filter(
-    (d) => !d.har_strukturelt_brudd && d.realvekst_pst !== null
-  );
-  if (sammenlignbare.length > 0) {
-    const hoyest = sammenlignbare.reduce((a, b) =>
-      a.realvekst_pst > b.realvekst_pst ? a : b
-    );
-    const lavest = sammenlignbare.reduce((a, b) =>
-      a.realvekst_pst < b.realvekst_pst ? a : b
-    );
-    settTekst("kpi-hoyest-pst", formaterProsent(hoyest.realvekst_pst));
-    settTekst("kpi-hoyest-navn", hoyest.navn);
-    settTekst("kpi-lavest-pst", formaterProsent(lavest.realvekst_pst));
-    settTekst("kpi-lavest-navn", lavest.navn);
-  }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[c]);
 }
 
-// --- Plotly toppliste-graf ---
+// --- URL-tilstand ---
 
-function renderToppliste(data) {
-  const sammenlignbare = data.departementer.filter(
-    (d) => !d.har_strukturelt_brudd && d.realvekst_pst !== null
-  );
-  // Plotly tegner førsteelement nederst, så vi sorterer stigende
-  const sortert = [...sammenlignbare].sort(
-    (a, b) => a.realvekst_pst - b.realvekst_pst
-  );
+function lesUrlTilstand() {
+  const u = new URL(window.location.href);
+  return {
+    dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
+    po: u.searchParams.get("po") || null,
+    post: u.searchParams.get("post")
+      ? parseInt(u.searchParams.get("post"), 10)
+      : null,
+  };
+}
 
-  const primaerFarge = lesCssToken("--farge-primaer") || "#1a3a6d";
+function lagUrl({ dep = null, po = null, post = null } = {}) {
+  const params = new URLSearchParams();
+  if (dep !== null) params.set("dep", dep);
+  if (po !== null) params.set("po", po);
+  if (post !== null) params.set("post", post);
+  const sok = params.toString();
+  return sok ? `?${sok}` : window.location.pathname;
+}
+
+function naviger(state) {
+  const url = lagUrl(state);
+  window.history.pushState(state, "", url);
+  router();
+}
+
+// --- Cache for departement-filer ---
+
+const DEP_CACHE = new Map();
+
+async function hentDepartement(dep_id) {
+  if (DEP_CACHE.has(dep_id)) return DEP_CACHE.get(dep_id);
+  const respons = await fetch(`data/departementer/${dep_id}.json`, { cache: "no-cache" });
+  if (!respons.ok) throw new Error(`HTTP ${respons.status}`);
+  const data = await respons.json();
+  DEP_CACHE.set(dep_id, data);
+  return data;
+}
+
+let OVERSIKT_CACHE = null;
+async function hentOversikt() {
+  if (OVERSIKT_CACHE) return OVERSIKT_CACHE;
+  const respons = await fetch("data/oversikt.json", { cache: "no-cache" });
+  if (!respons.ok) throw new Error(`HTTP ${respons.status}`);
+  OVERSIKT_CACHE = await respons.json();
+  return OVERSIKT_CACHE;
+}
+
+// --- Tidsserie-graf (delt mellom niv 1-3) ---
+
+function rendrerTidsserie(elementId, tidsserie, opts = {}) {
+  const primaerFarge = lesCssToken("--graf-linje-reell") || "#1a3a6d";
+  const sekundaerFarge = lesCssToken("--graf-linje-nominell") || "#6e6e6e";
   const tekstFarge = lesCssToken("--farge-tekst") || "#1a1a1a";
   const dempetFarge = lesCssToken("--farge-tekst-dempet") || "#6e6e6e";
   const kantFarge = lesCssToken("--graf-rutenett") || "#d4d4d4";
-  const fontStack = lesCssToken("--font-stack-sans") ||
-    "system-ui, sans-serif";
+  const fontStack = lesCssToken("--font-stack-sans") || "system-ui, sans-serif";
 
-  const trace = {
-    type: "bar",
-    orientation: "h",
-    x: sortert.map((d) => d.realvekst_pst),
-    y: sortert.map((d) => d.navn),
-    marker: { color: primaerFarge },
-    text: sortert.map((d) => formaterProsent(d.realvekst_pst)),
-    textposition: "outside",
-    cliponaxis: false,
-    hovertemplate:
-      "<b>%{y}</b><br>Realvekst: %{x:.1f} %<br>" +
-      "Reell 2014: %{customdata[0]} mrd. kr<br>" +
-      "Reell 2026: %{customdata[1]} mrd. kr<extra></extra>",
-    customdata: sortert.map((d) => [
-      formaterMrd(d.reell_start),
-      formaterMrd(d.reell_slutt),
-    ]),
+  const aar = tidsserie.map((p) => p.ar);
+  const nominell = tidsserie.map((p) =>
+    p.nominell !== null ? p.nominell / SI_NOK_TIL_MRD : null
+  );
+  const reell = tidsserie.map((p) =>
+    p.reell !== null ? p.reell / SI_NOK_TIL_MRD : null
+  );
+
+  const traceReell = {
+    type: "scatter",
+    mode: "lines+markers",
+    name: "Reell (2024-kroner)",
+    x: aar,
+    y: reell,
+    line: { color: primaerFarge, width: 2.5 },
+    marker: { color: primaerFarge, size: 7 },
+    hovertemplate: "%{x}: <b>%{y:.1f}</b> mrd. kr<extra>Reell</extra>",
+  };
+  const traceNominell = {
+    type: "scatter",
+    mode: "lines+markers",
+    name: "Nominell",
+    x: aar,
+    y: nominell,
+    line: { color: sekundaerFarge, width: 2, dash: "dot" },
+    marker: { color: sekundaerFarge, size: 6 },
+    hovertemplate: "%{x}: <b>%{y:.1f}</b> mrd. kr<extra>Nominell</extra>",
   };
 
   const layout = {
-    margin: { l: 240, r: 80, t: 20, b: 60 },
-    height: Math.max(420, sortert.length * 36 + 80),
+    margin: { l: 60, r: 20, t: 20, b: 50 },
+    height: 360,
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
     font: { family: fontStack, color: tekstFarge, size: 13 },
     xaxis: {
-      title: { text: "Realvekst 2014–2026 (pst.)", standoff: 16 },
+      title: { text: "År", standoff: 10 },
+      gridcolor: kantFarge,
+      tickformat: "d",
+    },
+    yaxis: {
+      title: { text: "Mrd. kr", standoff: 10 },
       gridcolor: kantFarge,
       zeroline: true,
       zerolinecolor: dempetFarge,
-      zerolinewidth: 1,
-      tickformat: ",.0f",
-      separatethousands: true,
+    },
+    legend: {
+      orientation: "h",
+      y: -0.18,
+      x: 0,
+    },
+    hovermode: "x unified",
+  };
+
+  const config = { displayModeBar: false, responsive: true, locale: "nb" };
+  Plotly.newPlot(elementId, [traceNominell, traceReell], layout, config);
+}
+
+// --- Toppliste-graf (delt mellom niv 0, 1, 2) ---
+
+function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) {
+  // rader = [{navn, realvekst_pst, reell_start, reell_slutt, klikkbar_url}]
+  const primaerFarge = lesCssToken("--farge-primaer") || "#1a3a6d";
+  const advarselFarge = lesCssToken("--farge-advarsel") || "#8a5a00";
+  const tekstFarge = lesCssToken("--farge-tekst") || "#1a1a1a";
+  const dempetFarge = lesCssToken("--farge-tekst-dempet") || "#6e6e6e";
+  const kantFarge = lesCssToken("--graf-rutenett") || "#d4d4d4";
+  const fontStack = lesCssToken("--font-stack-sans") || "system-ui, sans-serif";
+
+  const sortert = [...rader].sort((a, b) => {
+    const av = a[metrikk] === null ? -Infinity : a[metrikk];
+    const bv = b[metrikk] === null ? -Infinity : b[metrikk];
+    return av - bv;
+  });
+
+  const farger = sortert.map((r) =>
+    r.har_strukturelt_brudd ? advarselFarge : primaerFarge
+  );
+
+  const trace = {
+    type: "bar",
+    orientation: "h",
+    x: sortert.map((r) => (r[metrikk] === null ? 0 : r[metrikk])),
+    y: sortert.map((r) => r.navn),
+    marker: { color: farger },
+    text: sortert.map((r) => formaterProsent(r[metrikk])),
+    textposition: "outside",
+    cliponaxis: false,
+    hovertemplate: "<b>%{y}</b><br>Realvekst: %{x:.1f} %<extra></extra>",
+  };
+
+  const layout = {
+    margin: { l: 260, r: 80, t: 20, b: 50 },
+    height: Math.max(360, sortert.length * 36 + 80),
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: fontStack, color: tekstFarge, size: 13 },
+    xaxis: {
+      title: { text: "Realvekst (pst.)", standoff: 16 },
+      gridcolor: kantFarge,
+      zeroline: true,
+      zerolinecolor: dempetFarge,
       ticksuffix: " %",
     },
-    yaxis: {
-      automargin: true,
-      tickfont: { size: 13 },
-    },
+    yaxis: { automargin: true, tickfont: { size: 13 } },
     showlegend: false,
   };
 
-  const config = {
-    displayModeBar: false,
-    responsive: true,
-    locale: "nb",
-  };
-
-  Plotly.newPlot("toppliste-graf", [trace], layout, config);
+  const config = { displayModeBar: false, responsive: true, locale: "nb" };
+  Plotly.newPlot(elementId, [trace], layout, config);
 }
 
-// --- Tabell-alternativ ---
+// --- Brodsmulesti ---
 
-function renderTopplisteTabell(data) {
-  const tbody = document.querySelector("#toppliste-tabell tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+function renderBrodsmule(steg) {
+  // steg = [{tekst, url|null}]; siste har url=null og er aria-current
+  const nav = document.getElementById("brodsmule");
+  if (!nav) return;
+  const ol = nav.querySelector("ol");
+  ol.innerHTML = "";
+  for (const [i, s] of steg.entries()) {
+    const li = document.createElement("li");
+    if (i === steg.length - 1) {
+      li.setAttribute("aria-current", "page");
+      li.textContent = s.tekst;
+    } else {
+      const a = document.createElement("a");
+      a.href = s.url;
+      a.textContent = s.tekst;
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Konverter url tilbake til state
+        const u = new URL(s.url, window.location.origin);
+        const state = {
+          dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
+          po: u.searchParams.get("po") || null,
+          post: u.searchParams.get("post")
+            ? parseInt(u.searchParams.get("post"), 10)
+            : null,
+        };
+        naviger(state);
+      });
+      li.appendChild(a);
+    }
+    ol.appendChild(li);
+  }
+}
 
-  // Vis alle, inkludert brudd, men marker dem
-  for (const d of data.departementer) {
-    const rad = document.createElement("tr");
-    rad.innerHTML = `
-      <th scope="row">${d.navn}</th>
-      <td class="tall-kol">${
-        d.realvekst_pst === null ? "—" : formaterProsent(d.realvekst_pst)
-      }</td>
+// --- VIEW: niv 0 (alle departementer) ---
+
+async function visNiva0() {
+  const data = await hentOversikt();
+  renderBrodsmule([{ tekst: "Alle departementer", url: null }]);
+
+  const sammenlignbare = data.departementer.filter(
+    (d) => !d.har_strukturelt_brudd && d.realvekst_pst !== null
+  );
+  const hoyest =
+    sammenlignbare.length > 0
+      ? sammenlignbare.reduce((a, b) =>
+          a.realvekst_pst > b.realvekst_pst ? a : b
+        )
+      : null;
+  const lavest =
+    sammenlignbare.length > 0
+      ? sammenlignbare.reduce((a, b) =>
+          a.realvekst_pst < b.realvekst_pst ? a : b
+        )
+      : null;
+
+  const html = `
+    <section class="kpi-rad" aria-labelledby="kpi-tittel">
+      <h2 id="kpi-tittel" class="visuelt-skjult">Nøkkeltall</h2>
+      ${kpi("Periode", `${data.metadata.start}–${data.metadata.slutt}`, `Realvekst i ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Departementer", String(data.departementer.length), "Inkluderer strukturelle brudd")}
+      ${kpi("Høyeste realvekst", hoyest ? formaterProsent(hoyest.realvekst_pst) : "—", hoyest?.navn || "")}
+      ${kpi("Laveste realvekst (uten brudd)", lavest ? formaterProsent(lavest.realvekst_pst) : "—", lavest?.navn || "")}
+    </section>
+
+    <section class="toppliste" aria-labelledby="topp-tittel">
+      <header class="seksjon-header">
+        <h2 id="topp-tittel">Realvekst per departement</h2>
+        <p class="seksjon-beskrivelse">
+          Sortert synkende på realvekst i reelle ${data.metadata.basisaar}-kroner. Klikk på en
+          stolpe for å se programområder under departementet. Departementer med strukturelle
+          brudd er markert i oransje og plassert nederst.
+        </p>
+      </header>
+      <figure>
+        <div id="toppliste-graf" class="graf" role="img"
+             aria-label="Horisontal stolpegraf med realvekst per departement"></div>
+        <details class="tabell-alternativ">
+          <summary>Vis som tabell</summary>
+          ${depTabell(data.departementer)}
+        </details>
+        <figcaption class="metode-merknad">
+          Reell bevilgning beregnes ved kumulativ prisindeks med basisår
+          ${data.metadata.basisaar}. Postnummer 60–69 bruker kommunal deflator;
+          øvrige bruker statsbudsjettets utgiftsdeflator.
+        </figcaption>
+      </figure>
+    </section>
+
+    ${bruddSeksjonHtml(data.departementer.filter((d) => d.har_strukturelt_brudd))}
+  `;
+  document.getElementById("hovedinnhold").innerHTML = html;
+
+  rendrerToppliste("toppliste-graf", data.departementer);
+
+  // Klikk på stolpe -> drilldown
+  document.getElementById("toppliste-graf").on("plotly_click", (ev) => {
+    const navn = ev.points[0].y;
+    const dep = data.departementer.find((d) => d.navn === navn);
+    if (dep) naviger({ dep: dep.id });
+  });
+}
+
+// --- VIEW: niv 1 (ett departement) ---
+
+async function visNiva1(dep_id) {
+  const data = await hentDepartement(dep_id);
+  const dep = data.departement;
+  renderBrodsmule([
+    { tekst: "Alle departementer", url: lagUrl() },
+    { tekst: dep.navn, url: null },
+  ]);
+
+  // Bygg "raader" for toppliste
+  const po_rader = data.programomraader.map((po) => ({
+    navn: `${po.nr} ${po.navn}`,
+    realvekst_pst: po.realvekst_pst,
+    har_strukturelt_brudd: false,
+    _po_nr: po.nr,
+  }));
+
+  const startReell = dep.tidsserie.find((p) => p.ar === data.metadata.start)?.reell;
+  const sluttReell = dep.tidsserie.find((p) => p.ar === data.metadata.slutt)?.reell;
+  const sluttNominell = dep.tidsserie.find((p) => p.ar === data.metadata.slutt)?.nominell;
+
+  const html = `
+    <section class="kpi-rad">
+      <h2 class="visuelt-skjult">Nøkkeltall for ${escapeHtml(dep.navn)}</h2>
+      ${kpi("Reell bevilgning " + data.metadata.slutt, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Nominell bevilgning " + data.metadata.slutt, formaterBeloep(sluttNominell), "")}
+      ${kpi("Realvekst " + data.metadata.start + "–" + data.metadata.slutt, formaterProsent(dep.realvekst_pst), "", endringsklasse(dep.realvekst_pst))}
+      ${kpi("Programområder", String(data.programomraader.length), `${tellPoster(data.programomraader)} poster totalt`)}
+    </section>
+
+    ${dep.har_strukturelt_brudd ? bruddAdvarselHtml(dep) : ""}
+
+    <section class="tidsserie-seksjon" aria-labelledby="serie-tittel">
+      <header class="seksjon-header">
+        <h2 id="serie-tittel">Utvikling 2014–2026</h2>
+        <p class="seksjon-beskrivelse">
+          Reell bevilgning (heltrukken linje) sammenlignet med nominell (stiplet).
+        </p>
+      </header>
+      <figure>
+        <div id="tidsserie-graf" class="graf" role="img"
+             aria-label="Tidsserie nominell og reell bevilgning"></div>
+        <details class="tabell-alternativ">
+          <summary>Vis som tabell</summary>
+          ${tidsserieTabell(dep.tidsserie)}
+        </details>
+        <figcaption class="metode-merknad">
+          Reell bevilgning i ${data.metadata.basisaar}-kroner. Deflator anvendt per
+          postnummer (60–69 = kommunal, ellers statlig).
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="toppliste" aria-labelledby="po-tittel">
+      <header class="seksjon-header">
+        <h2 id="po-tittel">Programområder under ${escapeHtml(dep.navn)}</h2>
+        <p class="seksjon-beskrivelse">
+          Klikk på en stolpe eller en rad i tabellen for å gå videre til programområdet.
+        </p>
+      </header>
+      <figure>
+        <div id="po-graf" class="graf" role="img"
+             aria-label="Horisontal stolpegraf med realvekst per programområde"></div>
+        <details class="tabell-alternativ">
+          <summary>Vis som tabell</summary>
+          ${poTabell(data.programomraader, dep_id)}
+        </details>
+      </figure>
+    </section>
+  `;
+  document.getElementById("hovedinnhold").innerHTML = html;
+
+  rendrerTidsserie("tidsserie-graf", dep.tidsserie);
+  rendrerToppliste("po-graf", po_rader);
+
+  document.getElementById("po-graf").on("plotly_click", (ev) => {
+    const navn = ev.points[0].y;
+    const po = po_rader.find((p) => p.navn === navn);
+    if (po) naviger({ dep: dep_id, po: po._po_nr });
+  });
+
+  // Aktiver tabell-rader som lenker
+  document.querySelectorAll("[data-naviger-po]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      naviger({ dep: dep_id, po: el.dataset.navigerPo });
+    });
+  });
+}
+
+// --- VIEW: niv 2 (ett programomraade) ---
+
+async function visNiva2(dep_id, po_nr) {
+  const data = await hentDepartement(dep_id);
+  const dep = data.departement;
+  const po = data.programomraader.find((p) => p.nr === po_nr);
+  if (!po) {
+    visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
+    return;
+  }
+
+  renderBrodsmule([
+    { tekst: "Alle departementer", url: lagUrl() },
+    { tekst: dep.navn, url: lagUrl({ dep: dep_id }) },
+    { tekst: `${po.nr} ${po.navn}`, url: null },
+  ]);
+
+  const startReell = po.tidsserie.find((p) => p.ar === data.metadata.start)?.reell;
+  const sluttReell = po.tidsserie.find((p) => p.ar === data.metadata.slutt)?.reell;
+  const sluttNominell = po.tidsserie.find((p) => p.ar === data.metadata.slutt)?.nominell;
+
+  const post_rader = po.poster.map((post) => ({
+    navn: `kap. ${post.kapittel_nr} post ${String(post.post_nr).padStart(2, "0")} – ${post.post_navn}`,
+    realvekst_pst: post.realvekst_pst,
+    har_strukturelt_brudd: false,
+    _post_id: post.post_id,
+  }));
+
+  const html = `
+    <section class="kpi-rad">
+      <h2 class="visuelt-skjult">Nøkkeltall for ${escapeHtml(po.navn)}</h2>
+      ${kpi("Reell bevilgning " + data.metadata.slutt, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Nominell bevilgning " + data.metadata.slutt, formaterBeloep(sluttNominell), "")}
+      ${kpi("Realvekst " + data.metadata.start + "–" + data.metadata.slutt, formaterProsent(po.realvekst_pst), "", endringsklasse(po.realvekst_pst))}
+      ${kpi("Antall poster", String(po.poster.length), "")}
+    </section>
+
+    <section class="tidsserie-seksjon">
+      <header class="seksjon-header">
+        <h2>Utvikling 2014–2026</h2>
+      </header>
+      <figure>
+        <div id="tidsserie-graf" class="graf" role="img"
+             aria-label="Tidsserie nominell og reell bevilgning"></div>
+        <details class="tabell-alternativ">
+          <summary>Vis som tabell</summary>
+          ${tidsserieTabell(po.tidsserie)}
+        </details>
+      </figure>
+    </section>
+
+    <section class="toppliste">
+      <header class="seksjon-header">
+        <h2>Poster under programområde ${po.nr}</h2>
+        <p class="seksjon-beskrivelse">
+          Sortert synkende på realvekst. Klikk på en stolpe for å se posten i detalj.
+        </p>
+      </header>
+      <figure>
+        <div id="poster-graf" class="graf" role="img"
+             aria-label="Horisontal stolpegraf med realvekst per post"></div>
+        <details class="tabell-alternativ">
+          <summary>Vis som tabell</summary>
+          ${posterTabell(po.poster, dep_id, po.nr)}
+        </details>
+      </figure>
+    </section>
+  `;
+  document.getElementById("hovedinnhold").innerHTML = html;
+
+  rendrerTidsserie("tidsserie-graf", po.tidsserie);
+  rendrerToppliste("poster-graf", post_rader);
+
+  document.getElementById("poster-graf").on("plotly_click", (ev) => {
+    const navn = ev.points[0].y;
+    const post = post_rader.find((p) => p.navn === navn);
+    if (post) naviger({ dep: dep_id, po: po_nr, post: post._post_id });
+  });
+}
+
+// --- VIEW: niv 3 (en post) ---
+
+async function visNiva3(dep_id, po_nr, post_id) {
+  const data = await hentDepartement(dep_id);
+  const dep = data.departement;
+  const po = data.programomraader.find((p) => p.nr === po_nr);
+  if (!po) {
+    visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
+    return;
+  }
+  const post = po.poster.find((p) => p.post_id === post_id);
+  if (!post) {
+    visIkkeFunnet(`Post ${post_id} finnes ikke under programområde ${po_nr}.`);
+    return;
+  }
+
+  renderBrodsmule([
+    { tekst: "Alle departementer", url: lagUrl() },
+    { tekst: dep.navn, url: lagUrl({ dep: dep_id }) },
+    { tekst: `${po.nr} ${po.navn}`, url: lagUrl({ dep: dep_id, po: po_nr }) },
+    { tekst: post.post_navn, url: null },
+  ]);
+
+  const startReell = post.tidsserie.find((p) => p.ar === data.metadata.start)?.reell;
+  const sluttReell = post.tidsserie.find((p) => p.ar === data.metadata.slutt)?.reell;
+  const sluttNominell = post.tidsserie.find((p) => p.ar === data.metadata.slutt)?.nominell;
+
+  const html = `
+    <section class="kpi-rad">
+      <h2 class="visuelt-skjult">Nøkkeltall</h2>
+      ${kpi("Reell bevilgning " + data.metadata.slutt, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Nominell bevilgning " + data.metadata.slutt, formaterBeloep(sluttNominell), "")}
+      ${kpi("Realvekst " + data.metadata.start + "–" + data.metadata.slutt, formaterProsent(post.realvekst_pst), "", endringsklasse(post.realvekst_pst))}
+      ${kpi("Deflator", post.deflator_type === "kommunal" ? "Kommunal" : "Statsbudsjettets utgiftsdeflator", `Post-type: ${post.post_type || "—"}`)}
+    </section>
+
+    <section class="metadata-blokk">
+      <h2 class="visuelt-skjult">Metadata om posten</h2>
+      <dl class="metadata">
+        <div><dt>Departement</dt><dd>${escapeHtml(dep.navn)}</dd></div>
+        <div><dt>Programområde</dt><dd>${po.nr} ${escapeHtml(po.navn)}</dd></div>
+        <div><dt>Kapittel</dt><dd>${post.kapittel_nr} ${escapeHtml(post.kapittel)}</dd></div>
+        <div><dt>Post</dt><dd>${String(post.post_nr).padStart(2, "0")} ${escapeHtml(post.post_navn)}</dd></div>
+        <div><dt>Post-id</dt><dd class="tall">${post.post_id}</dd></div>
+        <div><dt>Deflator</dt><dd>${post.deflator_type === "kommunal" ? "Kommunal" : "Statlig"} (postnummer ${post.post_nr})</dd></div>
+      </dl>
+    </section>
+
+    <section class="tidsserie-seksjon">
+      <header class="seksjon-header">
+        <h2>År-for-år for ${escapeHtml(post.post_navn)}</h2>
+      </header>
+      <figure>
+        <div id="tidsserie-graf" class="graf" role="img"
+             aria-label="Tidsserie for posten"></div>
+        ${tidsserieTabell(post.tidsserie, true)}
+        <figcaption class="metode-merknad">
+          Reell verdi i ${data.metadata.basisaar}-kroner via
+          ${post.deflator_type === "kommunal" ? "kommunal deflator" : "statsbudsjettets utgiftsdeflator"}.
+        </figcaption>
+      </figure>
+    </section>
+  `;
+  document.getElementById("hovedinnhold").innerHTML = html;
+  rendrerTidsserie("tidsserie-graf", post.tidsserie);
+}
+
+// --- HTML-fragmentbyggere ---
+
+function kpi(etikett, tall, beskrivelse, ekstraKlasse = "") {
+  return `
+    <article class="kpi" data-variant="standard">
+      <p class="kpi__etikett">${escapeHtml(etikett)}</p>
+      <p class="kpi__tall ${ekstraKlasse}"><span class="tall">${escapeHtml(tall)}</span></p>
+      <p class="kpi__beskrivelse">${escapeHtml(beskrivelse)}</p>
+    </article>
+  `;
+}
+
+function tellPoster(programomraader) {
+  return programomraader.reduce((sum, po) => sum + po.poster.length, 0);
+}
+
+function depTabell(departementer) {
+  const rader = departementer
+    .map(
+      (d) => `
+    <tr>
+      <th scope="row"><a href="${lagUrl({ dep: d.id })}" data-naviger-dep="${d.id}">${escapeHtml(d.navn)}</a></th>
+      <td class="tall-kol">${d.realvekst_pst === null ? "—" : formaterProsent(d.realvekst_pst)}</td>
       <td class="tall-kol">${formaterMrd(d.reell_start)}</td>
       <td class="tall-kol">${formaterMrd(d.reell_slutt)}</td>
       <td>${d.har_strukturelt_brudd ? "Strukturelt brudd" : ""}</td>
-    `;
-    tbody.appendChild(rad);
-  }
+    </tr>`
+    )
+    .join("");
+  return `
+    <table>
+      <caption class="visuelt-skjult">Realvekst per departement</caption>
+      <thead>
+        <tr>
+          <th scope="col">Departement</th>
+          <th scope="col" class="tall-kol">Realvekst (pst.)</th>
+          <th scope="col" class="tall-kol">Reell 2014 (mrd. kr)</th>
+          <th scope="col" class="tall-kol">Reell 2026 (mrd. kr)</th>
+          <th scope="col">Merknad</th>
+        </tr>
+      </thead>
+      <tbody>${rader}</tbody>
+    </table>
+  `;
 }
 
-// --- Brudd-seksjon ---
-
-function renderBruddSeksjon(data) {
-  const brudd = data.departementer.filter((d) => d.har_strukturelt_brudd);
-  if (brudd.length === 0) return;
-
-  const seksjon = document.getElementById("brudd-seksjon");
-  const liste = document.getElementById("brudd-liste");
-  if (!seksjon || !liste) return;
-
-  seksjon.hidden = false;
-  liste.innerHTML = "";
-
-  for (const d of brudd) {
-    const li = document.createElement("li");
-    li.className = "brudd-kort";
-    li.innerHTML = `
-      <h3>${d.navn}</h3>
-      <p>${d.brudd_beskrivelse || ""}</p>
-    `;
-    liste.appendChild(li);
-  }
+function poTabell(programomraader, dep_id) {
+  const rader = programomraader
+    .map(
+      (po) => `
+    <tr>
+      <th scope="row"><a href="${lagUrl({ dep: dep_id, po: po.nr })}" data-naviger-po="${po.nr}">${po.nr} ${escapeHtml(po.navn)}</a></th>
+      <td class="tall-kol">${formaterProsent(po.realvekst_pst)}</td>
+      <td class="tall-kol">${po.poster.length}</td>
+    </tr>`
+    )
+    .join("");
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Programområde</th>
+          <th scope="col" class="tall-kol">Realvekst (pst.)</th>
+          <th scope="col" class="tall-kol">Poster</th>
+        </tr>
+      </thead>
+      <tbody>${rader}</tbody>
+    </table>
+  `;
 }
 
-// --- Footer-metadata ---
-
-function renderMetadata(data) {
-  const dato = new Date(data.metadata.generert);
-  const formattert = dato.toLocaleString("nb-NO", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  settTekst("datasett-generert", formattert);
+function posterTabell(poster, dep_id, po_nr) {
+  const rader = poster
+    .map(
+      (p) => `
+    <tr>
+      <th scope="row">
+        <a href="${lagUrl({ dep: dep_id, po: po_nr, post: p.post_id })}">
+          kap. ${p.kapittel_nr} post ${String(p.post_nr).padStart(2, "0")} – ${escapeHtml(p.post_navn)}
+        </a>
+      </th>
+      <td class="tall-kol">${formaterProsent(p.realvekst_pst)}</td>
+      <td>${p.deflator_type === "kommunal" ? "Kommunal" : "Statlig"}</td>
+    </tr>`
+    )
+    .join("");
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Post</th>
+          <th scope="col" class="tall-kol">Realvekst (pst.)</th>
+          <th scope="col">Deflator</th>
+        </tr>
+      </thead>
+      <tbody>${rader}</tbody>
+    </table>
+  `;
 }
 
-// --- Hovedflyt ---
+function tidsserieTabell(tidsserie, alltidSynlig = false) {
+  const rader = tidsserie
+    .map(
+      (p) => `
+    <tr>
+      <th scope="row" class="tall">${p.ar}</th>
+      <td class="tall-kol">${formaterBeloep(p.nominell)}</td>
+      <td class="tall-kol">${formaterBeloep(p.reell)}</td>
+    </tr>`
+    )
+    .join("");
+  const tabell = `
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">År</th>
+          <th scope="col" class="tall-kol">Nominell</th>
+          <th scope="col" class="tall-kol">Reell</th>
+        </tr>
+      </thead>
+      <tbody>${rader}</tbody>
+    </table>
+  `;
+  return alltidSynlig
+    ? `<div class="tabell-alternativ" style="margin-top: var(--avstand-m)">${tabell}</div>`
+    : tabell;
+}
 
-async function main() {
+function bruddAdvarselHtml(dep) {
+  return `
+    <aside class="brudd-advarsel" role="note">
+      <strong>Strukturelt brudd:</strong>
+      ${escapeHtml(dep.brudd_beskrivelse || "Departementet har en omorganisering som gjør tidsserien upålitelig.")}
+    </aside>
+  `;
+}
+
+function bruddSeksjonHtml(brudd) {
+  if (brudd.length === 0) return "";
+  const kort = brudd
+    .map(
+      (d) => `
+    <li class="brudd-kort">
+      <h3>${escapeHtml(d.navn)}</h3>
+      <p>${escapeHtml(d.brudd_beskrivelse || "")}</p>
+    </li>`
+    )
+    .join("");
+  return `
+    <section class="brudd-seksjon" aria-labelledby="brudd-tittel">
+      <header class="seksjon-header">
+        <h2 id="brudd-tittel">Strukturelle brudd</h2>
+        <p class="seksjon-beskrivelse">
+          Disse departementene har omorganiseringer eller mangler historikk.
+          Realvekst-tall for hele perioden kan ikke tolkes direkte.
+        </p>
+      </header>
+      <ul class="brudd-liste">${kort}</ul>
+    </section>
+  `;
+}
+
+// --- Feilvisning ---
+
+function visIkkeFunnet(melding) {
+  document.getElementById("hovedinnhold").innerHTML = `
+    <section class="ikke-funnet" role="alert">
+      <h2>Ikke funnet</h2>
+      <p>${escapeHtml(melding)}</p>
+      <p><a href="${lagUrl()}">Tilbake til oversikten</a></p>
+    </section>
+  `;
+}
+
+function visFeil(err) {
+  console.error(err);
+  document.getElementById("hovedinnhold").innerHTML = `
+    <section class="ikke-funnet" role="alert">
+      <h2>Kunne ikke laste data</h2>
+      <p>${escapeHtml(err.message || "Ukjent feil")}</p>
+    </section>
+  `;
+}
+
+// --- Router ---
+
+async function router() {
+  const main = document.getElementById("hovedinnhold");
+  main.setAttribute("aria-busy", "true");
+
+  const { dep, po, post } = lesUrlTilstand();
   try {
-    const respons = await fetch("data/oversikt.json", { cache: "no-cache" });
-    if (!respons.ok) {
-      throw new Error(`HTTP ${respons.status}`);
+    if (dep === null) {
+      await visNiva0();
+    } else if (po === null) {
+      await visNiva1(dep);
+    } else if (post === null) {
+      await visNiva2(dep, po);
+    } else {
+      await visNiva3(dep, po, post);
     }
-    const data = await respons.json();
 
-    renderKpiRad(data);
-    renderToppliste(data);
-    renderTopplisteTabell(data);
-    renderBruddSeksjon(data);
-    renderMetadata(data);
+    // Etabler klikk-håndtering for tabell-lenker (depTabell)
+    document.querySelectorAll("[data-naviger-dep]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        naviger({ dep: parseInt(el.dataset.navigerDep, 10) });
+      });
+    });
   } catch (err) {
-    console.error("Kunne ikke laste data:", err);
-    const main = document.getElementById("hovedinnhold");
-    if (main) {
-      const feil = document.createElement("p");
-      feil.role = "alert";
-      feil.textContent =
-        "Kunne ikke laste data. Sjekk at data/oversikt.json er publisert.";
-      main.prepend(feil);
-    }
+    visFeil(err);
+  } finally {
+    main.setAttribute("aria-busy", "false");
+  }
+
+  // Oppdater footer-metadata uansett
+  const cache = OVERSIKT_CACHE || (DEP_CACHE.size > 0 ? [...DEP_CACHE.values()][0] : null);
+  if (cache?.metadata) {
+    const dato = new Date(cache.metadata.generert);
+    const formattert = dato.toLocaleString("nb-NO", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const el = document.getElementById("datasett-generert");
+    if (el) el.textContent = formattert;
   }
 }
+
+window.addEventListener("popstate", router);
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", main);
+  document.addEventListener("DOMContentLoaded", router);
 } else {
-  main();
+  router();
 }
