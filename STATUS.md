@@ -1,25 +1,24 @@
 # Status — realvekst-statsbudsjett
 
-Sist oppdatert: ved prosjektoppstart
+Sist oppdatert: 2026-05-13
 
 ## Hva er ferdig
 
-- Repo opprettet med komplett mappestruktur
-- CLAUDE.md, PROJECT_PLAN.md, STATUS.md, README.md på plass
-- pyproject.toml med avhengigheter definert
+- Repo opprettet med komplett mappestruktur (src/data, src/analyse, src/dashboard, tests, docs/design, data/raw, data/processed)
+- Dokumentasjon på plass: CLAUDE.md, PROJECT_PLAN.md, README.md
+- pyproject.toml med avhengigheter (pandas, openpyxl, numpy; dev: pytest, ruff)
 - .gitignore på plass
-- Prototype er bygget og validert utenfor prosjektrepoet:
-  - Bevilgningsdata lastet og slått sammen (54 835 transaksjonsrader, 2014-2026)
-  - Aggregert til 21 326 unike post-år-kombinasjoner
-  - Deflatorer omregnet til kumulativ indeks (basisår 2024)
-  - Riktig deflator anvendt basert på POSTNUMMER (60-69 = kommunal, ellers statlig)
-  - Realvekst beregnet og validert mot kjente case (Forsvarsdep: +181 % real 2014-2026)
-  - Strukturelle brudd identifisert (Energidep, Nærings- og fiskeridep)
-  - 1 301 post-år-rader klassifisert som kommunal deflator, 20 025 som statlig
+- Rådata flyttet til data/raw/:
+  - bevilgning_2014_2019.xlsx
+  - bevilgning_2020_2026.xlsx
+  - deflatorer.csv
+- Designprinsipper dokumentert i docs/design/01-principles.md
+- Prototype av datalag overført til src/data/bevilgning.py med tester i tests/test_bevilgning.py
 
 ## Hva er under arbeid
 
-- Fase 2: Overføre prototypelogikk til strukturerte moduler i src/data/ og src/analyse/
+- Fase 2 fortsetter: src/data/deflator.py (kumulativ indeks)
+- Fase 3 forberedes: src/analyse/realvekst.py, aggregering.py, brudd.py
 
 ## Hva er blokkert
 
@@ -27,11 +26,12 @@ Sist oppdatert: ved prosjektoppstart
 
 ## Neste konkrete steg
 
-1. Initialisere git repo med første commit på main
-2. Opprette feature branch `feature/datalag-bevilgning` for å skrive første modul
-3. Implementere src/data/bevilgning.py med tester mot validerte referansetall
-4. Pull request med selvkontroll, merge til main
-5. Gjenta for src/data/deflator.py og src/analyse/realvekst.py
+1. PR `feature/datalag-bevilgning`: verifisere at tests/test_bevilgning.py passerer mot rådata, justere ved behov
+2. PR `feature/datalag-deflator`: implementere src/data/deflator.py med kumulativ indeks og tester
+3. PR `feature/analyse-realvekst`: src/analyse/realvekst.py med deflator-anvendelse basert på postnummer
+4. PR `feature/analyse-hierarki`: aggregering på alle nivåer og bruddmarkering
+5. PR `feature/designsystem`: docs/design/02-*, 03-*, src/dashboard/tokens.css
+6. PR `feature/frontend-dashboard`: index.html, styles.css, dashboard.js (kan deles)
 
 ## Validerte referansetall (fra prototypen)
 
