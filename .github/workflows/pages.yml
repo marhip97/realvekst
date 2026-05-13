@@ -38,6 +38,16 @@ jobs:
           echo "Total størrelse:"
           du -sh src/dashboard/
 
+      - name: Cache-bust CSS og JS med commit-SHA
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          echo "Cache-bust med v=$SHA"
+          sed -i "s|href=\"tokens.css\"|href=\"tokens.css?v=$SHA\"|g" src/dashboard/index.html
+          sed -i "s|href=\"styles.css\"|href=\"styles.css?v=$SHA\"|g" src/dashboard/index.html
+          sed -i "s|src=\"dashboard.js\"|src=\"dashboard.js?v=$SHA\"|g" src/dashboard/index.html
+          echo "Verifisering:"
+          grep -o 'v=[a-f0-9]*' src/dashboard/index.html | sort -u
+
       - name: Konfigurer Pages
         uses: actions/configure-pages@v5
 
