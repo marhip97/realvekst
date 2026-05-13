@@ -10,37 +10,124 @@
     />
     <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="styles.css" />
+    <script
+      defer
+      src="https://cdn.plot.ly/plotly-2.35.2.min.js"
+      integrity="sha512-Z1u7sLwYHbtZNCFP3PqGCzkA1DPoqzPCvqcwQHkjEv1aFnLDU7sLOaUcEy6yFlnLDxc66XMHVDqdfNcg7+nNkA=="
+      crossorigin="anonymous"
+    ></script>
+    <script defer src="dashboard.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#hovedinnhold">Hopp til hovedinnhold</a>
 
-    <header role="banner">
+    <header class="side-header">
       <p class="kicker">Finansavdelingen, Finansdepartementet</p>
       <h1>Realvekst i statsbudsjettet</h1>
       <p class="ingress">
         Et arbeidsverktøy som beregner og visualiserer realvekst i bevilgninger på alle nivåer av
         statsbudsjettets hierarki: departement, programområde og post.
       </p>
+
+      <nav aria-label="Brødsmulesti" class="brodsmule">
+        <ol>
+          <li aria-current="page">Alle departementer</li>
+        </ol>
+      </nav>
     </header>
 
     <main id="hovedinnhold">
-      <section aria-labelledby="status-tittel">
-        <h2 id="status-tittel">Under utvikling</h2>
-        <p>
-          Datalaget er på plass, men selve dashbordet er ennå ikke implementert. Frontend bygges
-          etter at designsystemet i <code>src/dashboard/tokens.css</code> er ferdig.
-        </p>
-        <p>
-          Se <a href="https://github.com/marhip97/realvekst">prosjektets GitHub-repo</a> for
-          status, plan og kildekode.
-        </p>
+      <section class="kpi-rad" aria-labelledby="kpi-tittel">
+        <h2 id="kpi-tittel" class="visuelt-skjult">Nøkkeltall</h2>
+        <article class="kpi" data-variant="standard">
+          <p class="kpi__etikett">Periode</p>
+          <p class="kpi__tall"><span id="kpi-periode" class="tall">—</span></p>
+          <p class="kpi__beskrivelse" id="kpi-periode-beskrivelse"></p>
+        </article>
+        <article class="kpi" data-variant="standard">
+          <p class="kpi__etikett">Departementer i utvalget</p>
+          <p class="kpi__tall"><span id="kpi-antall" class="tall">—</span></p>
+          <p class="kpi__beskrivelse">Inkluderer strukturelle brudd</p>
+        </article>
+        <article class="kpi" data-variant="standard">
+          <p class="kpi__etikett">Høyeste realvekst</p>
+          <p class="kpi__tall"><span id="kpi-hoyest-pst" class="tall">—</span></p>
+          <p class="kpi__beskrivelse" id="kpi-hoyest-navn"></p>
+        </article>
+        <article class="kpi" data-variant="standard">
+          <p class="kpi__etikett">Laveste realvekst (uten brudd)</p>
+          <p class="kpi__tall"><span id="kpi-lavest-pst" class="tall">—</span></p>
+          <p class="kpi__beskrivelse" id="kpi-lavest-navn"></p>
+        </article>
+      </section>
+
+      <section class="toppliste" aria-labelledby="toppliste-tittel">
+        <header class="seksjon-header">
+          <h2 id="toppliste-tittel">Realvekst per departement</h2>
+          <p class="seksjon-beskrivelse">
+            Sortert synkende på realvekst i reelle 2024-kroner. Departementer med strukturelle
+            brudd er markert og plassert nederst.
+          </p>
+        </header>
+
+        <figure aria-describedby="toppliste-metode">
+          <div
+            id="toppliste-graf"
+            class="graf"
+            role="img"
+            aria-label="Horisontal stolpegraf med realvekst per departement"
+          ></div>
+          <details class="tabell-alternativ">
+            <summary>Vis som tabell</summary>
+            <table id="toppliste-tabell">
+              <caption class="visuelt-skjult">
+                Realvekst per departement 2014–2026 i prosent
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Departement</th>
+                  <th scope="col" class="tall-kol">Realvekst (pst.)</th>
+                  <th scope="col" class="tall-kol">Reell 2014 (mrd. kr)</th>
+                  <th scope="col" class="tall-kol">Reell 2026 (mrd. kr)</th>
+                  <th scope="col">Merknad</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </details>
+          <figcaption id="toppliste-metode" class="metode-merknad">
+            Reell bevilgning beregnes ved kumulativ prisindeks med basisår 2024. Postnummer 60–69
+            bruker kommunal deflator; øvrige bruker statsbudsjettets utgiftsdeflator. Strukturelle
+            brudd (omorganiseringer) gjør at realvekst over hele perioden ikke kan tolkes for de
+            markerte departementene.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="brudd-seksjon" aria-labelledby="brudd-tittel" id="brudd-seksjon" hidden>
+        <header class="seksjon-header">
+          <h2 id="brudd-tittel">Strukturelle brudd</h2>
+          <p class="seksjon-beskrivelse">
+            Disse departementene har omorganiseringer eller mangler historikk. Realvekst-tall for
+            hele perioden kan ikke tolkes direkte.
+          </p>
+        </header>
+        <ul class="brudd-liste" id="brudd-liste"></ul>
       </section>
     </main>
 
-    <footer role="contentinfo">
+    <footer class="side-footer">
       <p>
-        Kildedata: statsregnskapet 2014–2026 (Finansdepartementet) og prisomregningsfaktorer fra
-        Finansdepartementet.
+        <strong>Kilde:</strong> Statsregnskapet 2014–2026 (Finansdepartementet) og
+        Finansdepartementets utgiftsdeflator + kommunal deflator.
+      </p>
+      <p>
+        <strong>Datasett generert:</strong> <span id="datasett-generert" class="tall">—</span>
+      </p>
+      <p>
+        <a href="https://github.com/marhip97/realvekst"
+          >Kildekode og dokumentasjon på GitHub</a
+        >
       </p>
     </footer>
   </body>

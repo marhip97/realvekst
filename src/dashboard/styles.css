@@ -1,10 +1,8 @@
 /*
- * Foreloepig stil for placeholder-siden, men bygget paa det permanente
- * designsystemet i tokens.css. Naar reell frontend bygges (Fase 5),
- * legges nye komponentstiler til i denne filen - alltid med
- * var(--token), aldri raa verdier.
- *
- * tokens.css MAA importeres foer denne filen i HTML-en.
+ * Komponentstiler for nivaa 0 (alle departementer). Bygd paa tokens.css.
+ * Naar drilldown og filtre kommer (PR-er etter denne) utvides denne filen
+ * med komponenter for niv 1-3, filterpanel osv. Alle verdier hentes
+ * fra var(--token) - ingen raa hex eller magic numbers.
  */
 
 * {
@@ -18,8 +16,22 @@ body {
   margin-inline: auto;
 }
 
-header {
-  margin-block-end: var(--avstand-xl);
+.visuelt-skjult {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Side-header ---- */
+
+.side-header {
+  margin-block-end: var(--avstand-2xl);
 }
 
 .kicker {
@@ -38,33 +50,219 @@ h1 {
   color: var(--farge-primaer-mork);
 }
 
-h2 {
-  font-size: var(--font-storrelse-l);
-  margin: 0 0 var(--avstand-m);
-  color: var(--farge-tekst);
-}
-
 .ingress {
   font-size: var(--font-storrelse-m);
   max-width: 50rem;
   color: var(--farge-tekst);
+  margin: 0 0 var(--avstand-l);
 }
 
-main section {
+.brodsmule {
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+}
+
+.brodsmule ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--avstand-xs);
+}
+
+.brodsmule li + li::before {
+  content: "›";
+  margin-inline-end: var(--avstand-xs);
+}
+
+.brodsmule [aria-current="page"] {
+  color: var(--farge-tekst);
+  font-weight: var(--font-vekt-medium);
+}
+
+/* ---- KPI-kort ---- */
+
+.kpi-rad {
+  display: grid;
+  gap: var(--avstand-m);
+  grid-template-columns: 1fr;
+  margin-block-end: var(--avstand-xl);
+}
+
+@media (min-width: 768px) {
+  .kpi-rad {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .kpi-rad {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.kpi {
   background: var(--kpi-bakgrunn);
   border: var(--kpi-kant);
   border-radius: var(--kpi-radius);
   padding: var(--kpi-padding);
-  margin-block-end: var(--avstand-l);
   box-shadow: var(--skygge-1);
+  margin: 0;
 }
 
-footer {
-  margin-block-start: var(--avstand-2xl);
+.kpi__etikett {
+  margin: 0 0 var(--avstand-xs);
+  font-size: var(--font-storrelse-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--farge-tekst-dempet);
+  font-weight: var(--font-vekt-medium);
+}
+
+.kpi__tall {
+  margin: 0 0 var(--avstand-xs);
+  font-size: var(--kpi-tall-storrelse-standard);
+  font-weight: var(--font-vekt-fet);
+  color: var(--farge-primaer-mork);
+  line-height: var(--linje-tett);
+}
+
+.kpi[data-variant="hero"] .kpi__tall {
+  font-size: var(--kpi-tall-storrelse-hero);
+}
+
+.kpi__beskrivelse {
+  margin: 0;
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+}
+
+.kpi__endring--positiv { color: var(--farge-positiv); }
+.kpi__endring--negativ { color: var(--farge-negativ); }
+
+/* ---- Seksjoner ---- */
+
+.toppliste,
+.brudd-seksjon {
+  margin-block-end: var(--avstand-2xl);
+}
+
+.seksjon-header {
+  margin-block-end: var(--avstand-l);
+}
+
+.seksjon-header h2 {
+  font-size: var(--font-storrelse-xl);
+  margin: 0 0 var(--avstand-xs);
+  color: var(--farge-tekst);
+}
+
+.seksjon-beskrivelse {
+  margin: 0;
+  font-size: var(--font-storrelse-s);
+  color: var(--farge-tekst-dempet);
+  max-width: 60rem;
+}
+
+/* ---- Graf ---- */
+
+.graf {
+  min-height: 520px;
+  background: var(--graf-bakgrunn);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-m);
+}
+
+figure {
+  margin: 0;
+}
+
+.tabell-alternativ {
+  margin-block-start: var(--avstand-m);
+}
+
+.tabell-alternativ summary {
+  cursor: pointer;
+  color: var(--farge-lenke);
+  font-size: var(--font-storrelse-xs);
+  padding: var(--avstand-xs) 0;
+}
+
+.tabell-alternativ table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block-start: var(--avstand-s);
+  font-size: var(--font-storrelse-xs);
+}
+
+.tabell-alternativ th,
+.tabell-alternativ td {
+  padding: var(--avstand-xs) var(--avstand-s);
+  text-align: start;
+  border-block-end: 1px solid var(--farge-kant);
+}
+
+.tabell-alternativ th {
+  background: var(--farge-overflate-dempet);
+  font-weight: var(--font-vekt-medium);
+}
+
+.tabell-alternativ .tall-kol {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.metode-merknad {
+  margin-block-start: var(--avstand-s);
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+  font-style: italic;
+}
+
+/* ---- Brudd-liste ---- */
+
+.brudd-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--avstand-m);
+}
+
+.brudd-kort {
+  background: var(--farge-advarsel-svak);
+  border-inline-start: 4px solid var(--farge-advarsel);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-m) var(--avstand-l);
+}
+
+.brudd-kort h3 {
+  margin: 0 0 var(--avstand-xs);
+  font-size: var(--font-storrelse-m);
+  color: var(--farge-advarsel);
+}
+
+.brudd-kort p {
+  margin: 0;
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst);
+  line-height: var(--linje-vanlig);
+}
+
+/* ---- Footer ---- */
+
+.side-footer {
+  margin-block-start: var(--avstand-3xl);
   padding-block-start: var(--avstand-l);
   border-block-start: 1px solid var(--farge-kant);
   font-size: var(--font-storrelse-xs);
   color: var(--farge-tekst-dempet);
+}
+
+.side-footer p {
+  margin: 0 0 var(--avstand-xs);
 }
 
 a {
