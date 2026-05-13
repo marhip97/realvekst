@@ -411,3 +411,124 @@ code {
   border-color: var(--farge-kant-fokus);
 }
 
+
+/* ---- Filter-panel ---- */
+
+.filter-panel {
+  background: var(--farge-overflate);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-m) var(--avstand-l);
+  margin-block-end: var(--avstand-l);
+}
+
+.filter-rad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--avstand-l);
+  align-items: flex-end;
+}
+
+.filter-felt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--avstand-xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.filter-felt--soek {
+  flex: 1 1 22rem;
+}
+
+.filter-felt--posttype {
+  flex: 2 1 28rem;
+}
+
+.filter-felt__etikett {
+  font-size: var(--font-storrelse-xs);
+  font-weight: var(--font-vekt-medium);
+  color: var(--farge-tekst);
+}
+
+.filter-felt__hjelp {
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+  margin: 0;
+}
+
+#filter-soek {
+  font: inherit;
+  padding: var(--avstand-xs) var(--avstand-s);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-s);
+  background: var(--farge-overflate);
+  color: var(--farge-tekst);
+}
+
+#filter-soek:focus {
+  border-color: var(--farge-kant-fokus);
+}
+
+.filter-posttype-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--avstand-xs) var(--avstand-m);
+}
+
+.filter-posttype-valg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avstand-xs);
+  font-size: var(--font-storrelse-xs);
+  cursor: pointer;
+  padding: var(--avstand-2xs) var(--avstand-xs);
+  border-radius: var(--radius-s);
+}
+
+.filter-posttype-valg input {
+  accent-color: var(--farge-primaer);
+}
+
+.filter-nullstill {
+  font: inherit;
+  font-size: var(--font-storrelse-xs);
+  padding: var(--avstand-xs) var(--avstand-m);
+  background: var(--farge-overflate);
+  color: var(--farge-tekst);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+.filter-nullstill:hover {
+  background: var(--farge-aktiv-bakgrunn);
+  border-color: var(--farge-kant-fokus);
+}
+
+.filter-status {
+  margin: var(--avstand-s) 0 0;
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+  min-height: 1.4em;
+}
+
+.filter-status:empty {
+  display: none;
+}
+
+.filter-tom-state {
+  background: var(--farge-overflate);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-l);
+  color: var(--farge-tekst-dempet);
+  text-align: center;
+}
+
+.filter-tom-state h3 {
+  margin: 0 0 var(--avstand-xs);
+  color: var(--farge-tekst);
+}

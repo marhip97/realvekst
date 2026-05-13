@@ -45,6 +45,25 @@ class TestMetadata:
         datetime.fromisoformat(oversikt["metadata"]["generert"])
 
 
+class TestPostTyper:
+    """Filter-funksjonalitet i frontend trenger en liste over distinkte post-typer."""
+
+    def test_post_typer_finnes_i_metadata(self, oversikt):
+        assert "post_typer" in oversikt["metadata"]
+
+    def test_post_typer_er_liste(self, oversikt):
+        pt = oversikt["metadata"]["post_typer"]
+        assert isinstance(pt, list)
+        assert all(isinstance(v, str) for v in pt)
+
+    def test_post_typer_er_sortert_unike(self, oversikt):
+        pt = oversikt["metadata"]["post_typer"]
+        assert pt == sorted(set(pt))
+
+    def test_post_typer_ikke_tom(self, oversikt):
+        assert len(oversikt["metadata"]["post_typer"]) >= 2
+
+
 class TestOversiktDepartementer:
     """Hver departementsblokk i oversikten har feltene frontend forventer."""
 
