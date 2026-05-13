@@ -9,7 +9,6 @@ import pytest
 
 from src.data.bevilgning import (
     _parse_belop,
-    aggreger_til_aarsbevilgning,
     last_bevilgning,
     split_kapittel_og_post,
 )
