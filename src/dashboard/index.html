@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Realvekst i statsbudsjettet</title>
+    <meta
+      name="description"
+      content="Dashbord for Finansavdelingen i Finansdepartementet som beregner og visualiserer realvekst i bevilgninger på alle nivåer av statsbudsjettets hierarki."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#hovedinnhold">Hopp til hovedinnhold</a>
+
+    <header role="banner">
+      <p class="kicker">Finansavdelingen, Finansdepartementet</p>
+      <h1>Realvekst i statsbudsjettet</h1>
+      <p class="ingress">
+        Et arbeidsverktøy som beregner og visualiserer realvekst i bevilgninger på alle nivåer av
+        statsbudsjettets hierarki: departement, programområde og post.
+      </p>
+    </header>
+
+    <main id="hovedinnhold">
+      <section aria-labelledby="status-tittel">
+        <h2 id="status-tittel">Under utvikling</h2>
+        <p>
+          Datalaget er på plass, men selve dashbordet er ennå ikke implementert. Frontend bygges
+          etter at designsystemet i <code>src/dashboard/tokens.css</code> er ferdig.
+        </p>
+        <p>
+          Se <a href="https://github.com/marhip97/realvekst">prosjektets GitHub-repo</a> for
+          status, plan og kildekode.
+        </p>
+      </section>
+    </main>
+
+    <footer role="contentinfo">
+      <p>
+        Kildedata: statsregnskapet 2014–2026 (Finansdepartementet) og prisomregningsfaktorer fra
+        Finansdepartementet.
+      </p>
+    </footer>
+  </body>
+</html>
