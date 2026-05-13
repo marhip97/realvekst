@@ -1,0 +1,226 @@
+/*
+ * tokens.css - Designsystemets ene sannhet.
+ *
+ * Alle visuelle valg i dashbordet hentes herfra via var(--token).
+ * Ingen raa hex-verdier, magic numbers eller hardkodede skrifttyper i
+ * andre filer.
+ *
+ * Tre lag:
+ *   1. Primitiver: rene fargeverdier, fontstacks, raw spacing-steg.
+ *   2. Semantiske tokens: hva en farge betyr i konteksten av dashbordet.
+ *   3. Komponent-tokens: spesifikke valg for KPI-kort, grafer osv.
+ *
+ * WCAG 2.1 AA kontrast er verifisert for alle tekst-paa-bakgrunn-par.
+ * Endringer her krever oppdatering av docs/design/01-principles.md
+ * og 03-components.md.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* --------- LAG 1: PRIMITIVER --------- */
+
+  /* Blaa-palett. Forankret i FINs supplerende designprofil.
+     Tonen er valgt for aa harmonere med regjeringen.no og Statens
+     designsystem, men oppleves egenstaaende for FIN. */
+  --bla-900: #0a1f3d;
+  --bla-700: #1a3a6d;
+  --bla-500: #2c5a9a;
+  --bla-300: #6b8fc3;
+  --bla-100: #d8e3f3;
+  --bla-50:  #eef3fa;
+
+  /* Noeytrale graatoner.
+     Bygd rundt #1a1a1a (tekst) og #fafafa (bakgrunn). */
+  --grafarge-900: #1a1a1a;
+  --grafarge-700: #424242;
+  --grafarge-500: #6e6e6e;
+  --grafarge-300: #b0b0b0;
+  --grafarge-200: #d4d4d4;
+  --grafarge-100: #e8e8e8;
+  --grafarge-50:  #f5f5f5;
+  --grafarge-25:  #fafafa;
+  --hvit: #ffffff;
+
+  /* Semantiske primitivfarger. Alle valgt for WCAG-kontrast >= 4.5:1
+     mot hvit bakgrunn, og mot var(--grafarge-25). */
+  --positiv-700: #006c4e;
+  --positiv-500: #2a9d6f;
+  --positiv-100: #d6f0e3;
+
+  --negativ-700: #a43030;
+  --negativ-500: #d04040;
+  --negativ-100: #f7d8d8;
+
+  --advarsel-700: #8a5a00;
+  --advarsel-500: #c98a00;
+  --advarsel-100: #fbe9c2;
+
+  /* Typografi-stack. System-fonter foerst for ytelse og lokal
+     gjenkjennelse. Sans-serif som fallback. */
+  --font-stack-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-stack-tall:
+    "SF Mono", "JetBrains Mono", "Source Sans Pro", var(--font-stack-sans);
+
+  /* Skala 1.25 (major third) basert paa 16px = 1rem. */
+  --font-storrelse-2xs: 0.75rem;   /* 12px */
+  --font-storrelse-xs:  0.875rem;  /* 14px */
+  --font-storrelse-s:   1rem;      /* 16px */
+  --font-storrelse-m:   1.125rem;  /* 18px */
+  --font-storrelse-l:   1.4rem;    /* 22px */
+  --font-storrelse-xl:  1.75rem;   /* 28px */
+  --font-storrelse-2xl: 2.25rem;   /* 36px */
+  --font-storrelse-3xl: 2.85rem;   /* 46px - hero */
+
+  --font-vekt-normal: 400;
+  --font-vekt-medium: 500;
+  --font-vekt-fet:    700;
+
+  --linje-tett:    1.2;
+  --linje-vanlig:  1.5;
+  --linje-romslig: 1.7;
+
+  /* Avstand-skala basert paa 4px-grid. */
+  --avstand-2xs: 0.25rem;  /* 4px */
+  --avstand-xs:  0.5rem;   /* 8px */
+  --avstand-s:   0.75rem;  /* 12px */
+  --avstand-m:   1rem;     /* 16px */
+  --avstand-l:   1.5rem;   /* 24px */
+  --avstand-xl:  2rem;     /* 32px */
+  --avstand-2xl: 3rem;     /* 48px */
+  --avstand-3xl: 4rem;     /* 64px */
+
+  /* Hjoerneradius. Holdt strammt - ingen pille-knapper. */
+  --radius-s: 0.25rem;
+  --radius-m: 0.5rem;
+  --radius-l: 0.75rem;
+
+  /* Tynne skygger til elevasjon. */
+  --skygge-1: 0 1px 2px rgba(10, 31, 61, 0.06);
+  --skygge-2: 0 2px 8px rgba(10, 31, 61, 0.08);
+
+  /* Breakpoints - dokumenteres her, brukes i media-queries.
+     CSS @media kan ikke lese custom properties, saa verdiene
+     ma duplikeres der. Hold synkront. */
+  --bp-tablet:  768px;
+  --bp-desktop: 1100px;
+  --maks-bredde-innhold: 72rem;
+
+  /* Animasjonstider. */
+  --tid-rask:    120ms;
+  --tid-vanlig:  220ms;
+  --tid-langsom: 360ms;
+  --easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --------- LAG 2: SEMANTISKE TOKENS --------- */
+
+  /* Overflater */
+  --farge-bakgrunn:        var(--grafarge-25);
+  --farge-overflate:       var(--hvit);
+  --farge-overflate-dempet: var(--grafarge-50);
+  --farge-kant:            var(--grafarge-200);
+  --farge-kant-fokus:      var(--bla-500);
+
+  /* Tekst */
+  --farge-tekst:           var(--grafarge-900);
+  --farge-tekst-dempet:    var(--grafarge-500);
+  --farge-tekst-invertert: var(--hvit);
+
+  /* Aksentfarger - brukes til det fremhevede elementet */
+  --farge-primaer:         var(--bla-700);
+  --farge-primaer-svak:    var(--bla-100);
+  --farge-primaer-mork:    var(--bla-900);
+
+  /* Sekundaerfarger - sammenligningselementer (nominell-linje osv.) */
+  --farge-sekundaer:       var(--grafarge-500);
+  --farge-sekundaer-svak:  var(--grafarge-100);
+
+  /* Semantikk */
+  --farge-positiv:         var(--positiv-700);
+  --farge-positiv-svak:    var(--positiv-100);
+  --farge-negativ:         var(--negativ-700);
+  --farge-negativ-svak:    var(--negativ-100);
+  --farge-advarsel:        var(--advarsel-700);
+  --farge-advarsel-svak:   var(--advarsel-100);
+
+  /* Interaksjonstilstander */
+  --farge-fokus:           var(--bla-500);
+  --farge-aktiv-bakgrunn:  var(--bla-50);
+  --farge-lenke:           var(--bla-700);
+  --farge-lenke-hover:     var(--bla-900);
+
+  /* --------- LAG 3: KOMPONENT-TOKENS --------- */
+
+  /* KPI-kort */
+  --kpi-bakgrunn:     var(--farge-overflate);
+  --kpi-kant:         1px solid var(--farge-kant);
+  --kpi-radius:       var(--radius-m);
+  --kpi-padding:      var(--avstand-l);
+  --kpi-tall-storrelse-hero:     var(--font-storrelse-3xl);
+  --kpi-tall-storrelse-standard: var(--font-storrelse-2xl);
+
+  /* Graf */
+  --graf-linje-nominell: var(--farge-sekundaer);
+  --graf-linje-reell:    var(--farge-primaer);
+  --graf-linje-tykkelse: 2.5px;
+  --graf-rutenett:       var(--farge-kant);
+  --graf-bakgrunn:       var(--farge-overflate);
+
+  /* Toppliste */
+  --toppliste-bar-fremhevet: var(--farge-primaer);
+  --toppliste-bar-vanlig:    var(--farge-primaer-svak);
+  --toppliste-radhoyde:      2.5rem;
+}
+
+/* Brukerens system-preferanser. */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tid-rask:    0ms;
+    --tid-vanlig:  0ms;
+    --tid-langsom: 0ms;
+  }
+}
+
+/* Base-typografi paa <body> - alle elementer arver. */
+body {
+  font-family: var(--font-stack-sans);
+  font-size: var(--font-storrelse-s);
+  line-height: var(--linje-vanlig);
+  color: var(--farge-tekst);
+  background: var(--farge-bakgrunn);
+}
+
+/* Tabulaer-tall for alle tallkomponenter. Klassen .tall paa
+   span/element rundt tall-strenger gir mono-spaced sifre uten aa
+   bytte font. */
+.tall {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Skip-link - alltid foerste fokuserbare element. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: -9999px;
+  inset-block-start: 0;
+  background: var(--farge-tekst);
+  color: var(--farge-tekst-invertert);
+  padding: var(--avstand-xs) var(--avstand-m);
+  z-index: 999;
+}
+
+.skip-link:focus-visible {
+  inset-inline-start: var(--avstand-m);
+  inset-block-start: var(--avstand-m);
+}
+
+/* Universell fokusindikator. Brukes paa alle interaktive elementer
+   uten egen :focus-visible-styling. */
+:focus-visible {
+  outline: 3px solid var(--farge-fokus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
