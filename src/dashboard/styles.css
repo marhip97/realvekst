@@ -1,0 +1,82 @@
+/*
+ * Foreløpig minimal stilark for placeholder-siden. Reell styling kommer
+ * når designsystemet i tokens.css er definert (Fase 4 av PROJECT_PLAN.md).
+ * Alle visuelle valg her er midlertidige.
+ */
+
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 2rem clamp(1rem, 5vw, 3rem);
+  max-width: 64rem;
+  margin-inline: auto;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  z-index: 999;
+}
+
+header {
+  margin-block-end: 2rem;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  margin: 0 0 1rem;
+}
+
+.ingress {
+  font-size: 1.125rem;
+  max-width: 50rem;
+}
+
+main section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-block-end: 1.5rem;
+}
+
+footer {
+  margin-block-start: 3rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+a {
+  color: #003366;
+}
+
+a:focus-visible {
+  outline: 3px solid #0066cc;
+  outline-offset: 2px;
+}
