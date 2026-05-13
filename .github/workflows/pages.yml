@@ -3,9 +3,6 @@ name: Publiser dashbord til GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - "src/dashboard/**"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -26,6 +23,20 @@ jobs:
     steps:
       - name: Sjekk ut repo
         uses: actions/checkout@v4
+
+      - name: List filer som skal lastes opp
+        run: |
+          echo "Innhold av src/dashboard/:"
+          ls -la src/dashboard/
+          echo ""
+          echo "Innhold av src/dashboard/data/:"
+          ls -la src/dashboard/data/ || echo "(mappen finnes ikke)"
+          echo ""
+          echo "Innhold av src/dashboard/data/departementer/:"
+          ls -la src/dashboard/data/departementer/ || echo "(mappen finnes ikke)"
+          echo ""
+          echo "Total størrelse:"
+          du -sh src/dashboard/
 
       - name: Konfigurer Pages
         uses: actions/configure-pages@v5
