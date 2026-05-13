@@ -79,28 +79,100 @@ function escapeHtml(s) {
 
 function lesUrlTilstand() {
   const u = new URL(window.location.href);
+  const ptRaw = u.searchParams.get("pt");
   return {
     dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
-    po: u.searchParams.get("po") || null,
+    po: u.searchParams.get("po")
+      ? parseInt(u.searchParams.get("po"), 10)
+      : null,
     post: u.searchParams.get("post")
       ? parseInt(u.searchParams.get("post"), 10)
       : null,
+    q: u.searchParams.get("q") || "",
+    pt: ptRaw ? ptRaw.split(",").filter(Boolean) : [],
   };
 }
 
-function lagUrl({ dep = null, po = null, post = null } = {}) {
+function lagUrl({ dep = null, po = null, post = null, q = "", pt = [] } = {}) {
   const params = new URLSearchParams();
   if (dep !== null) params.set("dep", dep);
   if (po !== null) params.set("po", po);
   if (post !== null) params.set("post", post);
+  if (q) params.set("q", q);
+  if (pt && pt.length > 0) params.set("pt", pt.join(","));
   const sok = params.toString();
   return sok ? `?${sok}` : window.location.pathname;
 }
 
 function naviger(state) {
-  const url = lagUrl(state);
-  window.history.pushState(state, "", url);
+  const naa = lesUrlTilstand();
+  const samlet = { q: naa.q, pt: naa.pt, ...state };
+  const url = lagUrl(samlet);
+  window.history.pushState(samlet, "", url);
   router();
+}
+
+function settFilterStateOgRender({ q, pt } = {}) {
+  // Bevarer drilldown-nivaa, oppdaterer kun filter-delene av URL.
+  const naa = lesUrlTilstand();
+  const ny = {
+    dep: naa.dep,
+    po: naa.po,
+    post: naa.post,
+    q: q !== undefined ? q : naa.q,
+    pt: pt !== undefined ? pt : naa.pt,
+  };
+  const url = lagUrl(ny);
+  window.history.replaceState(ny, "", url);
+  router();
+}
+
+// --- Filter-hjelpere ---
+
+function normaliserSoek(s) {
+  return (s || "").toString().trim().toLowerCase();
+}
+
+function _matcherTekst(felt, q) {
+  return normaliserSoek(felt).includes(q);
+}
+
+function postMatcher(post, q, postTyper) {
+  if (postTyper.length > 0) {
+    if (!postTyper.includes(post.post_type)) return false;
+  }
+  if (!q) return true;
+  return (
+    _matcherTekst(post.post_navn, q) ||
+    _matcherTekst(post.kapittel, q) ||
+    _matcherTekst(String(post.kapittel_nr), q) ||
+    _matcherTekst(String(post.post_nr).padStart(2, "0"), q) ||
+    _matcherTekst(String(post.post_nr), q) ||
+    _matcherTekst(String(post.post_id), q)
+  );
+}
+
+function programomraadeMatcher(po, q, postTyper) {
+  // Et programomraade matcher hvis det selv matcher tekst og minst en
+  // av postene under matcher post-type-filteret (eller post-type er tomt).
+  // Ved tekstsoek matcher vi ogsaa via underliggende poster.
+  const harTypeMatch =
+    postTyper.length === 0 || po.poster.some((p) => postTyper.includes(p.post_type));
+  if (!harTypeMatch) return false;
+
+  if (!q) return true;
+  if (_matcherTekst(po.navn, q) || _matcherTekst(String(po.nr), q)) return true;
+  return po.poster.some((p) => postMatcher(p, q, postTyper));
+}
+
+function departementMatcher(dep, q, postTyper) {
+  // Bruker dep.post_typer fra oversikt.json hvis tilgjengelig.
+  if (postTyper.length > 0) {
+    const dt = dep.post_typer || [];
+    if (!postTyper.some((t) => dt.includes(t))) return false;
+  }
+  if (!q) return true;
+  return _matcherTekst(dep.navn, q) || _matcherTekst(String(dep.id), q);
 }
 
 // --- Cache for departement-filer ---
@@ -283,13 +355,121 @@ function renderBrodsmule(steg) {
   }
 }
 
+// --- Filter-panel: UI-binding ---
+
+let FILTER_INIT_DONE = false;
+
+function settUtFilterPanel(metadata) {
+  const liste = document.getElementById("filter-posttype-liste");
+  if (!liste) return;
+  const typer = metadata?.post_typer || [];
+  const { pt } = lesUrlTilstand();
+  const valgt = new Set(pt);
+  if (typer.length === 0) {
+    liste.innerHTML = `<p class="filter-felt__hjelp">Ingen post-typer i datasettet.</p>`;
+    return;
+  }
+  liste.innerHTML = typer
+    .map(
+      (t) => `
+      <label class="filter-posttype-valg">
+        <input type="checkbox" value="${escapeHtml(t)}" ${
+          valgt.has(t) ? "checked" : ""
+        } />
+        <span>${escapeHtml(t)}</span>
+      </label>`
+    )
+    .join("");
+}
+
+function bindFilterUi() {
+  if (FILTER_INIT_DONE) return;
+  FILTER_INIT_DONE = true;
+
+  const soek = document.getElementById("filter-soek");
+  const nullstill = document.getElementById("filter-nullstill");
+  const liste = document.getElementById("filter-posttype-liste");
+
+  let timeout = null;
+  soek.addEventListener("input", (e) => {
+    const v = e.target.value;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => settFilterStateOgRender({ q: v }), 180);
+  });
+
+  liste.addEventListener("change", (e) => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      const valgt = Array.from(
+        liste.querySelectorAll('input[type="checkbox"]:checked')
+      ).map((c) => c.value);
+      settFilterStateOgRender({ pt: valgt });
+    }
+  });
+
+  nullstill.addEventListener("click", () => {
+    soek.value = "";
+    liste
+      .querySelectorAll('input[type="checkbox"]:checked')
+      .forEach((c) => (c.checked = false));
+    settFilterStateOgRender({ q: "", pt: [] });
+  });
+}
+
+function oppdaterFilterStatus(antallVist, antallTotalt, etikett) {
+  const status = document.getElementById("filter-status");
+  const nullstill = document.getElementById("filter-nullstill");
+  const { q, pt } = lesUrlTilstand();
+  const aktivt = q || pt.length > 0;
+  nullstill.hidden = !aktivt;
+  if (!aktivt) {
+    status.textContent = "";
+    return;
+  }
+  status.textContent = `Filter aktivt: viser ${antallVist} av ${antallTotalt} ${etikett}.`;
+}
+
+function tomStateHtml() {
+  return `
+    <section class="filter-tom-state" role="status">
+      <h3>Ingen treff</h3>
+      <p>Ingen elementer matcher det aktive filteret. Juster søket eller fjern post-type-valg.</p>
+    </section>
+  `;
+}
+
+function synkroniserFilterInputer() {
+  const { q, pt } = lesUrlTilstand();
+  const soek = document.getElementById("filter-soek");
+  if (soek && soek.value !== q) soek.value = q;
+  const liste = document.getElementById("filter-posttype-liste");
+  if (liste) {
+    const valgt = new Set(pt);
+    liste.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+      c.checked = valgt.has(c.value);
+    });
+  }
+}
+
 // --- VIEW: niv 0 (alle departementer) ---
 
 async function visNiva0() {
   const data = await hentOversikt();
+  settUtFilterPanel(data.metadata);
+  synkroniserFilterInputer();
   renderBrodsmule([{ tekst: "Alle departementer", url: null }]);
 
-  const sammenlignbare = data.departementer.filter(
+  const { q, pt } = lesUrlTilstand();
+  const qNorm = normaliserSoek(q);
+  const alleDeps = data.departementer;
+  const filtrerteDeps = alleDeps.filter((d) => departementMatcher(d, qNorm, pt));
+  oppdaterFilterStatus(filtrerteDeps.length, alleDeps.length, "departementer");
+
+  if (filtrerteDeps.length === 0) {
+    document.getElementById("hovedinnhold").innerHTML = tomStateHtml();
+    return;
+  }
+
+  const sammenlignbare = filtrerteDeps.filter(
     (d) => !d.har_strukturelt_brudd && d.realvekst_pst !== null
   );
   const hoyest =
@@ -309,7 +489,7 @@ async function visNiva0() {
     <section class="kpi-rad" aria-labelledby="kpi-tittel">
       <h2 id="kpi-tittel" class="visuelt-skjult">Nøkkeltall</h2>
       ${kpi("Periode", `${data.metadata.start}–${data.metadata.slutt}`, `Realvekst i ${data.metadata.basisaar}-kroner`)}
-      ${kpi("Departementer", String(data.departementer.length), "Inkluderer strukturelle brudd")}
+      ${kpi("Departementer", String(filtrerteDeps.length), "I valgt filter")}
       ${kpi("Høyeste realvekst", hoyest ? formaterProsent(hoyest.realvekst_pst) : "—", hoyest?.navn || "")}
       ${kpi("Laveste realvekst (uten brudd)", lavest ? formaterProsent(lavest.realvekst_pst) : "—", lavest?.navn || "")}
     </section>
@@ -328,7 +508,7 @@ async function visNiva0() {
              aria-label="Horisontal stolpegraf med realvekst per departement"></div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${depTabell(data.departementer)}
+          ${depTabell(filtrerteDeps)}
         </details>
         <figcaption class="metode-merknad">
           Reell bevilgning beregnes ved kumulativ prisindeks med basisår
@@ -338,16 +518,16 @@ async function visNiva0() {
       </figure>
     </section>
 
-    ${bruddSeksjonHtml(data.departementer.filter((d) => d.har_strukturelt_brudd))}
+    ${bruddSeksjonHtml(filtrerteDeps.filter((d) => d.har_strukturelt_brudd))}
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerToppliste("toppliste-graf", data.departementer);
+  rendrerToppliste("toppliste-graf", filtrerteDeps);
 
   // Klikk på stolpe -> drilldown
   document.getElementById("toppliste-graf").on("plotly_click", (ev) => {
     const navn = ev.points[0].y;
-    const dep = data.departementer.find((d) => d.navn === navn);
+    const dep = filtrerteDeps.find((d) => d.navn === navn);
     if (dep) naviger({ dep: dep.id });
   });
 }
@@ -356,14 +536,24 @@ async function visNiva0() {
 
 async function visNiva1(dep_id) {
   const data = await hentDepartement(dep_id);
+  settUtFilterPanel(data.metadata);
+  synkroniserFilterInputer();
   const dep = data.departement;
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
     { tekst: dep.navn, url: null },
   ]);
 
+  const { q, pt } = lesUrlTilstand();
+  const qNorm = normaliserSoek(q);
+  const allePo = data.programomraader;
+  const filtrerteProgramomraader = allePo.filter((po) =>
+    programomraadeMatcher(po, qNorm, pt)
+  );
+  oppdaterFilterStatus(filtrerteProgramomraader.length, allePo.length, "programområder");
+
   // Bygg "raader" for toppliste
-  const po_rader = data.programomraader.map((po) => ({
+  const po_rader = filtrerteProgramomraader.map((po) => ({
     navn: `${po.nr} ${po.navn}`,
     realvekst_pst: po.realvekst_pst,
     har_strukturelt_brudd: false,
@@ -380,7 +570,7 @@ async function visNiva1(dep_id) {
       ${kpi("Reell bevilgning " + data.metadata.slutt, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
       ${kpi("Nominell bevilgning " + data.metadata.slutt, formaterBeloep(sluttNominell), "")}
       ${kpi("Realvekst " + data.metadata.start + "–" + data.metadata.slutt, formaterProsent(dep.realvekst_pst), "", endringsklasse(dep.realvekst_pst))}
-      ${kpi("Programområder", String(data.programomraader.length), `${tellPoster(data.programomraader)} poster totalt`)}
+      ${kpi("Programområder", String(filtrerteProgramomraader.length), `${tellPoster(filtrerteProgramomraader)} poster totalt`)}
     </section>
 
     ${dep.har_strukturelt_brudd ? bruddAdvarselHtml(dep) : ""}
@@ -413,26 +603,34 @@ async function visNiva1(dep_id) {
           Klikk på en stolpe eller en rad i tabellen for å gå videre til programområdet.
         </p>
       </header>
-      <figure>
+      ${
+        filtrerteProgramomraader.length === 0
+          ? tomStateHtml()
+          : `<figure>
         <div id="po-graf" class="graf" role="img"
              aria-label="Horisontal stolpegraf med realvekst per programområde"></div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${poTabell(data.programomraader, dep_id)}
+          ${poTabell(filtrerteProgramomraader, dep_id)}
         </details>
-      </figure>
+      </figure>`
+      }
     </section>
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
   rendrerTidsserie("tidsserie-graf", dep.tidsserie);
-  rendrerToppliste("po-graf", po_rader);
+  if (filtrerteProgramomraader.length > 0) {
+    rendrerToppliste("po-graf", po_rader);
+  }
 
-  document.getElementById("po-graf").on("plotly_click", (ev) => {
-    const navn = ev.points[0].y;
-    const po = po_rader.find((p) => p.navn === navn);
-    if (po) naviger({ dep: dep_id, po: po._po_nr });
-  });
+  if (filtrerteProgramomraader.length > 0) {
+    document.getElementById("po-graf").on("plotly_click", (ev) => {
+      const navn = ev.points[0].y;
+      const po = po_rader.find((p) => p.navn === navn);
+      if (po) naviger({ dep: dep_id, po: po._po_nr });
+    });
+  }
 
   // Aktiver tabell-rader som lenker
   document.querySelectorAll("[data-naviger-po]").forEach((el) => {
@@ -447,12 +645,19 @@ async function visNiva1(dep_id) {
 
 async function visNiva2(dep_id, po_nr) {
   const data = await hentDepartement(dep_id);
+  settUtFilterPanel(data.metadata);
+  synkroniserFilterInputer();
   const dep = data.departement;
   const po = data.programomraader.find((p) => p.nr === po_nr);
   if (!po) {
     visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
+  const { q, pt } = lesUrlTilstand();
+  const qNorm = normaliserSoek(q);
+  const allePoster = po.poster;
+  const filtrertePoster = allePoster.filter((p) => postMatcher(p, qNorm, pt));
+  oppdaterFilterStatus(filtrertePoster.length, allePoster.length, "poster");
 
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
@@ -464,7 +669,7 @@ async function visNiva2(dep_id, po_nr) {
   const sluttReell = po.tidsserie.find((p) => p.ar === data.metadata.slutt)?.reell;
   const sluttNominell = po.tidsserie.find((p) => p.ar === data.metadata.slutt)?.nominell;
 
-  const post_rader = po.poster.map((post) => ({
+  const post_rader = filtrertePoster.map((post) => ({
     navn: `kap. ${post.kapittel_nr} post ${String(post.post_nr).padStart(2, "0")} – ${post.post_navn}`,
     realvekst_pst: post.realvekst_pst,
     har_strukturelt_brudd: false,
@@ -477,7 +682,7 @@ async function visNiva2(dep_id, po_nr) {
       ${kpi("Reell bevilgning " + data.metadata.slutt, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
       ${kpi("Nominell bevilgning " + data.metadata.slutt, formaterBeloep(sluttNominell), "")}
       ${kpi("Realvekst " + data.metadata.start + "–" + data.metadata.slutt, formaterProsent(po.realvekst_pst), "", endringsklasse(po.realvekst_pst))}
-      ${kpi("Antall poster", String(po.poster.length), "")}
+      ${kpi("Antall poster", String(filtrertePoster.length), filtrertePoster.length === allePoster.length ? "" : `av ${allePoster.length} totalt`)}
     </section>
 
     <section class="tidsserie-seksjon">
@@ -501,32 +706,40 @@ async function visNiva2(dep_id, po_nr) {
           Sortert synkende på realvekst. Klikk på en stolpe for å se posten i detalj.
         </p>
       </header>
-      <figure>
+      ${
+        filtrertePoster.length === 0
+          ? tomStateHtml()
+          : `<figure>
         <div id="poster-graf" class="graf" role="img"
              aria-label="Horisontal stolpegraf med realvekst per post"></div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${posterTabell(po.poster, dep_id, po.nr)}
+          ${posterTabell(filtrertePoster, dep_id, po.nr)}
         </details>
-      </figure>
+      </figure>`
+      }
     </section>
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
   rendrerTidsserie("tidsserie-graf", po.tidsserie);
-  rendrerToppliste("poster-graf", post_rader);
-
-  document.getElementById("poster-graf").on("plotly_click", (ev) => {
-    const navn = ev.points[0].y;
-    const post = post_rader.find((p) => p.navn === navn);
-    if (post) naviger({ dep: dep_id, po: po_nr, post: post._post_id });
-  });
+  if (filtrertePoster.length > 0) {
+    rendrerToppliste("poster-graf", post_rader);
+    document.getElementById("poster-graf").on("plotly_click", (ev) => {
+      const navn = ev.points[0].y;
+      const post = post_rader.find((p) => p.navn === navn);
+      if (post) naviger({ dep: dep_id, po: po_nr, post: post._post_id });
+    });
+  }
 }
 
 // --- VIEW: niv 3 (en post) ---
 
 async function visNiva3(dep_id, po_nr, post_id) {
   const data = await hentDepartement(dep_id);
+  settUtFilterPanel(data.metadata);
+  synkroniserFilterInputer();
+  oppdaterFilterStatus(1, 1, "post");
   const dep = data.departement;
   const po = data.programomraader.find((p) => p.nr === po_nr);
   if (!po) {
@@ -777,6 +990,7 @@ function visFeil(err) {
 // --- Router ---
 
 async function router() {
+  bindFilterUi();
   const main = document.getElementById("hovedinnhold");
   main.setAttribute("aria-busy", "true");
 

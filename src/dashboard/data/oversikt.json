@@ -3,8 +3,15 @@
     "basisaar": 2024,
     "start": 2014,
     "slutt": 2026,
-    "generert": "2026-05-13T18:00:26+00:00",
-    "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer"
+    "generert": "2026-05-13T18:53:54+00:00",
+    "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer",
+    "post_typer": [
+      "Overføringer til andre",
+      "Overføringer til kommuner og fylkeskommuner",
+      "Utgifter til drift",
+      "Utgifter til investeringer",
+      "Utlån, kapitaltilskudd, aksjer"
+    ]
   },
   "departementer": [
     {
@@ -83,6 +90,13 @@
           "nominell": 177961399000.0,
           "reell": 164535295296.33862
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -161,6 +175,12 @@
           "nominell": 27172415000.0,
           "reell": 25118166496.548977
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
       ]
     },
     {
@@ -239,6 +259,12 @@
           "nominell": 27367005000.0,
           "reell": 25299632051.81331
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
       ]
     },
     {
@@ -317,6 +343,13 @@
           "nominell": 34948020000.0,
           "reell": 32309548775.051846
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -395,6 +428,13 @@
           "nominell": 300953489000.0,
           "reell": 278192110948.6191
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -473,6 +513,12 @@
           "nominell": 57376334000.0,
           "reell": 53043695995.31527
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
       ]
     },
     {
@@ -551,6 +597,13 @@
           "nominell": 736965721000.0,
           "reell": 681211875243.1915
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -629,6 +682,13 @@
           "nominell": -1690853656000.0,
           "reell": -1563526589031.6223
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -707,6 +767,13 @@
           "nominell": 114378789000.0,
           "reell": 105712762442.80104
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -785,6 +852,13 @@
           "nominell": 297345069000.0,
           "reell": 272927949114.0518
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -863,6 +937,12 @@
           "nominell": 59546269000.0,
           "reell": 55053872965.97633
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -941,6 +1021,12 @@
           "nominell": 79706767000.0,
           "reell": 73698476900.70772
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
       ]
     },
     {
@@ -1019,6 +1105,13 @@
           "nominell": 102716200000.0,
           "reell": 94905626025.32178
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -1097,6 +1190,13 @@
           "nominell": 20283245000.0,
           "reell": 18742156730.611927
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -1175,6 +1275,13 @@
           "nominell": -218990601000.0,
           "reell": -202481450779.85037
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     },
     {
@@ -1203,6 +1310,13 @@
           "nominell": 10296637000.0,
           "reell": 9518695826.342575
         }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
       ]
     }
   ]

@@ -103,6 +103,7 @@ def bygg_oversikt(
     """
     bev = last_bevilgning()
     bev_reell = beregn_reell_bevilgning(bev, basisaar=basisaar)
+    post_typer = _distinkte_post_typer(bev_reell)
     dep = aggreger_per_departement(bev_reell)
     dep = marker_brudd_departement(dep)
 
@@ -129,6 +130,10 @@ def bygg_oversikt(
             else None
         )
 
+        post_typer_for_dep = _distinkte_post_typer(
+            bev_reell[bev_reell["Fagdepartement_id"] == dep_id]
+        )
+
         departementer.append(
             {
                 "id": dep_id,
@@ -141,6 +146,7 @@ def bygg_oversikt(
                 "har_strukturelt_brudd": har_brudd,
                 "brudd_beskrivelse": brudd_beskrivelse,
                 "tidsserie": tidsserie,
+                "post_typer": post_typer_for_dep,
             }
         )
 
@@ -152,19 +158,35 @@ def bygg_oversikt(
     )
 
     return {
-        "metadata": _metadata(basisaar, start, slutt),
+        "metadata": _metadata(basisaar, start, slutt, post_typer=post_typer),
         "departementer": departementer,
     }
 
 
-def _metadata(basisaar: int, start: int, slutt: int) -> dict[str, Any]:
-    return {
+def _metadata(
+    basisaar: int,
+    start: int,
+    slutt: int,
+    post_typer: list[str] | None = None,
+) -> dict[str, Any]:
+    meta: dict[str, Any] = {
         "basisaar": basisaar,
         "start": start,
         "slutt": slutt,
         "generert": datetime.now(UTC).isoformat(timespec="seconds"),
         "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer",
     }
+    if post_typer is not None:
+        meta["post_typer"] = post_typer
+    return meta
+
+
+def _distinkte_post_typer(bev: pd.DataFrame) -> list[str]:
+    """Hent sortert liste over distinkte Post_type-verdier (uten NaN/tom)."""
+    if "Post_type" not in bev.columns:
+        return []
+    verdier = bev["Post_type"].dropna().astype(str).str.strip()
+    return sorted(v for v in verdier.unique() if v)
 
 
 def bygg_departement(
@@ -289,9 +311,10 @@ def bygg_departement(
     programomraader.sort(key=lambda p: p["nr"])
 
     dep_realvekst = _realvekst_fra_tidsserie(dep_tidsserie, start, slutt)
+    post_typer = _distinkte_post_typer(bev_reell)
 
     return {
-        "metadata": _metadata(basisaar, start, slutt),
+        "metadata": _metadata(basisaar, start, slutt, post_typer=post_typer),
         "departement": {
             "id": dep_id,
             "navn": dep_navn,
