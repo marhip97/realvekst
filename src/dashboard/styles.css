@@ -1,82 +1,86 @@
 /*
- * Foreløpig minimal stilark for placeholder-siden. Reell styling kommer
- * når designsystemet i tokens.css er definert (Fase 4 av PROJECT_PLAN.md).
- * Alle visuelle valg her er midlertidige.
+ * Foreloepig stil for placeholder-siden, men bygget paa det permanente
+ * designsystemet i tokens.css. Naar reell frontend bygges (Fase 5),
+ * legges nye komponentstiler til i denne filen - alltid med
+ * var(--token), aldri raa verdier.
+ *
+ * tokens.css MAA importeres foer denne filen i HTML-en.
  */
 
-:root {
-  color-scheme: light;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  padding: 2rem clamp(1rem, 5vw, 3rem);
-  max-width: 64rem;
+  padding: var(--avstand-xl) clamp(var(--avstand-m), 5vw, var(--avstand-2xl));
+  max-width: var(--maks-bredde-innhold);
   margin-inline: auto;
-  color: #1a1a1a;
-  background: #fafafa;
-}
-
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-}
-
-.skip-link:focus {
-  left: 1rem;
-  top: 1rem;
-  background: #1a1a1a;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  z-index: 999;
 }
 
 header {
-  margin-block-end: 2rem;
+  margin-block-end: var(--avstand-xl);
 }
 
 .kicker {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.85rem;
-  color: #555;
-  margin: 0 0 0.5rem;
+  font-size: var(--font-storrelse-2xs);
+  color: var(--farge-tekst-dempet);
+  margin: 0 0 var(--avstand-xs);
+  font-weight: var(--font-vekt-medium);
 }
 
 h1 {
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  margin: 0 0 1rem;
+  font-size: clamp(var(--font-storrelse-xl), 4vw, var(--font-storrelse-3xl));
+  margin: 0 0 var(--avstand-m);
+  line-height: var(--linje-tett);
+  color: var(--farge-primaer-mork);
+}
+
+h2 {
+  font-size: var(--font-storrelse-l);
+  margin: 0 0 var(--avstand-m);
+  color: var(--farge-tekst);
 }
 
 .ingress {
-  font-size: 1.125rem;
+  font-size: var(--font-storrelse-m);
   max-width: 50rem;
+  color: var(--farge-tekst);
 }
 
 main section {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  margin-block-end: 1.5rem;
+  background: var(--kpi-bakgrunn);
+  border: var(--kpi-kant);
+  border-radius: var(--kpi-radius);
+  padding: var(--kpi-padding);
+  margin-block-end: var(--avstand-l);
+  box-shadow: var(--skygge-1);
 }
 
 footer {
-  margin-block-start: 3rem;
-  padding-block-start: 1.5rem;
-  border-block-start: 1px solid #e0e0e0;
-  font-size: 0.875rem;
-  color: #555;
+  margin-block-start: var(--avstand-2xl);
+  padding-block-start: var(--avstand-l);
+  border-block-start: 1px solid var(--farge-kant);
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
 }
 
 a {
-  color: #003366;
+  color: var(--farge-lenke);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
-a:focus-visible {
-  outline: 3px solid #0066cc;
-  outline-offset: 2px;
+a:hover {
+  color: var(--farge-lenke-hover);
+}
+
+code {
+  font-family: var(--font-stack-tall);
+  background: var(--farge-overflate-dempet);
+  padding: 0 var(--avstand-2xs);
+  border-radius: var(--radius-s);
+  font-size: 0.95em;
 }
