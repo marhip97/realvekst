@@ -178,6 +178,18 @@ def _metadata(
     }
     if post_typer is not None:
         meta["post_typer"] = post_typer
+
+    # Prisindeksene eksporteres slik at frontend (priskalkulatoren) kan
+    # konvertere belop mellom aarstall uten aa lese rade-CSV.
+    from src.data.deflator import bygg_prisindeks
+
+    indeks = bygg_prisindeks(basisaar=basisaar)
+    meta["prisindeks"] = {
+        "basisaar": basisaar,
+        "aar": [int(a) for a in indeks["Ar"]],
+        "statlig": [float(v) for v in indeks["indeks_statlig"]],
+        "kommunal": [float(v) for v in indeks["indeks_kommunal"]],
+    }
     return meta
 
 

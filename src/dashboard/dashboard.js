@@ -96,6 +96,9 @@ function lesUrlTilstand() {
   const ptRaw = u.searchParams.get("pt");
   const trRaw = u.searchParams.get("tr");
   const trNum = trRaw !== null ? Number(trRaw) : null;
+  const tab = u.searchParams.get("tab");
+  const kalkBelopRaw = u.searchParams.get("kalk_belop");
+  const kalkBelopNum = kalkBelopRaw !== null ? Number(kalkBelopRaw) : null;
   return {
     dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
     po: u.searchParams.get("po")
@@ -109,6 +112,24 @@ function lesUrlTilstand() {
     fra: u.searchParams.get("fra") ? parseInt(u.searchParams.get("fra"), 10) : null,
     til: u.searchParams.get("til") ? parseInt(u.searchParams.get("til"), 10) : null,
     tr: trNum !== null && Number.isFinite(trNum) && trNum >= 0 ? trNum : null,
+    tab: tab === "priskalkulator" ? "priskalkulator" : "drilldown",
+    kalkDep: u.searchParams.get("kalk_dep")
+      ? parseInt(u.searchParams.get("kalk_dep"), 10)
+      : null,
+    kalkPo: u.searchParams.get("kalk_po")
+      ? parseInt(u.searchParams.get("kalk_po"), 10)
+      : null,
+    kalkPost: u.searchParams.get("kalk_post")
+      ? parseInt(u.searchParams.get("kalk_post"), 10)
+      : null,
+    kalkFra: u.searchParams.get("kalk_fra")
+      ? parseInt(u.searchParams.get("kalk_fra"), 10)
+      : null,
+    kalkTil: u.searchParams.get("kalk_til")
+      ? parseInt(u.searchParams.get("kalk_til"), 10)
+      : null,
+    kalkBelop:
+      kalkBelopNum !== null && Number.isFinite(kalkBelopNum) ? kalkBelopNum : null,
   };
 }
 
@@ -121,16 +142,33 @@ function lagUrl({
   fra = null,
   til = null,
   tr = null,
+  tab = "drilldown",
+  kalkDep = null,
+  kalkPo = null,
+  kalkPost = null,
+  kalkFra = null,
+  kalkTil = null,
+  kalkBelop = null,
 } = {}) {
   const params = new URLSearchParams();
-  if (dep !== null) params.set("dep", dep);
-  if (po !== null) params.set("po", po);
-  if (post !== null) params.set("post", post);
-  if (q) params.set("q", q);
-  if (pt && pt.length > 0) params.set("pt", pt.join(","));
-  if (fra !== null) params.set("fra", fra);
-  if (til !== null) params.set("til", til);
-  if (tr !== null) params.set("tr", tr);
+  if (tab === "priskalkulator") {
+    params.set("tab", "priskalkulator");
+    if (kalkDep !== null) params.set("kalk_dep", kalkDep);
+    if (kalkPo !== null) params.set("kalk_po", kalkPo);
+    if (kalkPost !== null) params.set("kalk_post", kalkPost);
+    if (kalkFra !== null) params.set("kalk_fra", kalkFra);
+    if (kalkTil !== null) params.set("kalk_til", kalkTil);
+    if (kalkBelop !== null) params.set("kalk_belop", kalkBelop);
+  } else {
+    if (dep !== null) params.set("dep", dep);
+    if (po !== null) params.set("po", po);
+    if (post !== null) params.set("post", post);
+    if (q) params.set("q", q);
+    if (pt && pt.length > 0) params.set("pt", pt.join(","));
+    if (fra !== null) params.set("fra", fra);
+    if (til !== null) params.set("til", til);
+    if (tr !== null) params.set("tr", tr);
+  }
   const sok = params.toString();
   return sok ? `?${sok}` : window.location.pathname;
 }
@@ -170,6 +208,13 @@ function naviger(state) {
     fra: naa.fra,
     til: naa.til,
     tr: naa.tr,
+    tab: naa.tab,
+    kalkDep: naa.kalkDep,
+    kalkPo: naa.kalkPo,
+    kalkPost: naa.kalkPost,
+    kalkFra: naa.kalkFra,
+    kalkTil: naa.kalkTil,
+    kalkBelop: naa.kalkBelop,
     ...state,
   };
   const url = lagUrl(samlet);
@@ -1282,6 +1327,198 @@ function bruddSeksjonHtml(brudd) {
 
 // --- Feilvisning ---
 
+// --- Tab-navigering og priskalkulator ---
+
+function oppdaterTabUi(tab) {
+  document.querySelectorAll("[role='tab']").forEach((knapp) => {
+    const aktiv = knapp.dataset.tab === tab;
+    knapp.classList.toggle("tab--aktiv", aktiv);
+    knapp.setAttribute("aria-selected", aktiv ? "true" : "false");
+  });
+}
+
+function settPanelerSynlige(synlig) {
+  const filter = document.querySelector(".filter-panel");
+  const brodsmule = document.getElementById("brodsmule");
+  if (filter) filter.hidden = !synlig;
+  if (brodsmule) brodsmule.hidden = !synlig;
+}
+
+function bindTabUi() {
+  document.querySelectorAll("[role='tab']").forEach((knapp) => {
+    if (knapp.dataset.bundet) return;
+    knapp.dataset.bundet = "1";
+    knapp.addEventListener("click", () => {
+      const tab = knapp.dataset.tab;
+      naviger({ tab, dep: null, po: null, post: null });
+    });
+  });
+}
+
+function priskonvertering(prisindeks, deflatorType, beloep, fraAr, tilAr) {
+  // Returnerer beløp i til-år-kroner basert på kumulativ prisindeks
+  // for valgt deflator-type. Returnerer null hvis år mangler eller
+  // input er ugyldig.
+  if (!Number.isFinite(beloep) || beloep < 0) return null;
+  if (!prisindeks || !prisindeks.aar) return null;
+  const idxFra = prisindeks.aar.indexOf(fraAr);
+  const idxTil = prisindeks.aar.indexOf(tilAr);
+  if (idxFra === -1 || idxTil === -1) return null;
+  const serie = deflatorType === "kommunal" ? prisindeks.kommunal : prisindeks.statlig;
+  const pFra = serie[idxFra];
+  const pTil = serie[idxTil];
+  if (!pFra || !pTil) return null;
+  return beloep * (pTil / pFra);
+}
+
+function formaterKroner(belop) {
+  return new Intl.NumberFormat("nb-NO", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(belop));
+}
+
+async function visPriskalkulator() {
+  const oversikt = await hentOversikt();
+  const meta = oversikt.metadata;
+  const aar = meta.prisindeks?.aar || [];
+  const state = lesUrlTilstand();
+
+  // Defaults: konverter fra start til slutt i metadata.
+  const fraAr = state.kalkFra ?? meta.start;
+  const tilAr = state.kalkTil ?? meta.slutt;
+  const belop = state.kalkBelop ?? 100000;
+  const deflatorType = state.kalkPo === 60 ? "kommunal" : "statlig";
+
+  const resultat = priskonvertering(meta.prisindeks, deflatorType, belop, fraAr, tilAr);
+
+  const aarValg = (selected) =>
+    aar.map((a) => `<option value="${a}" ${a === selected ? "selected" : ""}>${a}</option>`).join("");
+
+  const deflatorValg = `
+    <label class="kalkulator__felt">
+      <span class="filter-felt__etikett">Deflator-type</span>
+      <select id="kalk-deflator">
+        <option value="statlig" ${deflatorType === "statlig" ? "selected" : ""}>
+          Statsbudsjettets utgiftsdeflator (post 01–59, 70–89)
+        </option>
+        <option value="kommunal" ${deflatorType === "kommunal" ? "selected" : ""}>
+          Kommunal deflator (post 60–69)
+        </option>
+      </select>
+    </label>`;
+
+  const main = document.getElementById("hovedinnhold");
+  main.innerHTML = `
+    <section class="kalkulator" aria-labelledby="kalk-tittel">
+      <header class="seksjon-header">
+        <p class="seksjon-kicker">Verktøy</p>
+        <h2 id="kalk-tittel">Priskalkulator</h2>
+        <p class="seksjon-beskrivelse">
+          Beregn hva et beløp i ett år tilsvarer i et annet år, justert
+          med Finansdepartementets utgiftsdeflator eller kommunal deflator.
+          Velg deflator-type etter postnummeret: 60–69-serien bruker
+          kommunal deflator; øvrige bruker statsbudsjettets utgiftsdeflator.
+        </p>
+      </header>
+
+      <form class="kalkulator__skjema" id="kalk-skjema" aria-describedby="kalk-resultat">
+        <label class="kalkulator__felt">
+          <span class="filter-felt__etikett">Beløp (kr)</span>
+          <input
+            type="number"
+            id="kalk-belop"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            value="${belop}"
+            aria-describedby="kalk-belop-hjelp"
+          />
+          <span id="kalk-belop-hjelp" class="filter-felt__hjelp">
+            Nominelle kroner i fra-året.
+          </span>
+        </label>
+
+        <label class="kalkulator__felt">
+          <span class="filter-felt__etikett">Fra år</span>
+          <select id="kalk-fra">${aarValg(fraAr)}</select>
+        </label>
+
+        <label class="kalkulator__felt">
+          <span class="filter-felt__etikett">Til år</span>
+          <select id="kalk-til">${aarValg(tilAr)}</select>
+        </label>
+
+        ${deflatorValg}
+      </form>
+
+      <div class="kalkulator__resultat" id="kalk-resultat" aria-live="polite">
+        ${
+          resultat !== null
+            ? `<p class="kalkulator__svar">
+                 <span class="kalkulator__belop">${formaterKroner(belop)} kr</span>
+                 i <strong>${fraAr}</strong> tilsvarer
+                 <span class="kalkulator__belop kalkulator__belop--frem">
+                   ${formaterKroner(resultat)} kr
+                 </span>
+                 i <strong>${tilAr}</strong>.
+               </p>
+               <p class="kalkulator__metode">
+                 Beregnet med ${deflatorType === "kommunal" ? "kommunal deflator" : "statsbudsjettets utgiftsdeflator"}.
+                 Kumulativ prisindeks: ${aarFormel(meta.prisindeks, deflatorType, fraAr, tilAr)}.
+               </p>`
+            : `<p class="kalkulator__feil">Ugyldig input. Skriv inn et positivt beløp og velg gyldige år.</p>`
+        }
+      </div>
+    </section>
+  `;
+
+  bindKalkulatorUi();
+}
+
+function aarFormel(prisindeks, deflatorType, fraAr, tilAr) {
+  const idxFra = prisindeks.aar.indexOf(fraAr);
+  const idxTil = prisindeks.aar.indexOf(tilAr);
+  if (idxFra === -1 || idxTil === -1) return "";
+  const serie = deflatorType === "kommunal" ? prisindeks.kommunal : prisindeks.statlig;
+  return `${serie[idxFra].toFixed(2)} (${fraAr}) → ${serie[idxTil].toFixed(2)} (${tilAr}), basisaar ${prisindeks.basisaar} = 100`;
+}
+
+function bindKalkulatorUi() {
+  const skjema = document.getElementById("kalk-skjema");
+  if (!skjema) return;
+  const reager = () => {
+    const belopInput = document.getElementById("kalk-belop");
+    const fraSelect = document.getElementById("kalk-fra");
+    const tilSelect = document.getElementById("kalk-til");
+    const defSelect = document.getElementById("kalk-deflator");
+    const belop = Number(belopInput.value);
+    const fra = parseInt(fraSelect.value, 10);
+    const til = parseInt(tilSelect.value, 10);
+    // Vi gjenbruker kalkPo-feltet til aa lagre deflator-valget:
+    // 60 = kommunal, 0 = statlig. Dette unngaar aa innfore et nytt
+    // URL-parameter for et binært valg.
+    const kalkPo = defSelect.value === "kommunal" ? 60 : null;
+    const naa = lesUrlTilstand();
+    const ny = {
+      ...naa,
+      kalkBelop: Number.isFinite(belop) && belop >= 0 ? belop : null,
+      kalkFra: fra,
+      kalkTil: til,
+      kalkPo,
+    };
+    const url = lagUrl(ny);
+    window.history.replaceState(ny, "", url);
+    visPriskalkulator();
+  };
+  ["change", "input"].forEach((evt) => {
+    skjema.addEventListener(evt, () => {
+      // Debounce belop-input slik at vi ikke re-rendrer pa hvert tastetrykk.
+      clearTimeout(skjema._debounce);
+      skjema._debounce = setTimeout(reager, 220);
+    });
+  });
+}
+
 function visIkkeFunnet(melding) {
   document.getElementById("hovedinnhold").innerHTML = `
     <section class="ikke-funnet" role="alert">
@@ -1306,19 +1543,29 @@ function visFeil(err) {
 
 async function router() {
   bindFilterUi();
+  bindTabUi();
   const main = document.getElementById("hovedinnhold");
   main.setAttribute("aria-busy", "true");
 
-  const { dep, po, post } = lesUrlTilstand();
+  const { dep, po, post, tab } = lesUrlTilstand();
+  oppdaterTabUi(tab);
+
   try {
-    if (dep === null) {
-      await visNiva0();
-    } else if (po === null) {
-      await visNiva1(dep);
-    } else if (post === null) {
-      await visNiva2(dep, po);
+    if (tab === "priskalkulator") {
+      // Skjul filter-panel og brodsmulesti — de hoerer ikke til kalkulatoren.
+      settPanelerSynlige(false);
+      await visPriskalkulator();
     } else {
-      await visNiva3(dep, po, post);
+      settPanelerSynlige(true);
+      if (dep === null) {
+        await visNiva0();
+      } else if (po === null) {
+        await visNiva1(dep);
+      } else if (post === null) {
+        await visNiva2(dep, po);
+      } else {
+        await visNiva3(dep, po, post);
+      }
     }
 
     // Etabler klikk-haandtering for tabell-rader og lenker.
