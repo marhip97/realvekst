@@ -50,6 +50,17 @@ DEFAULT_BASISAAR = 2026
 DEFAULT_START = 2022
 DEFAULT_SLUTT = 2026
 
+# Poster som ekskluderes fra aggregert realvekstanalyse paa samlet
+# statsbudsjett-niva og departements-niva. Beholdes i datasettet slik
+# at brukeren kan drilldowne til posten, men holdes ute av summene
+# fordi de ikke er meningsfulle aa inkludere i realvekstanalyse.
+#
+# 280050: Statens pensjonsfond utland, post 50 'Overforing til fondet'.
+#         Belopet svinger voldsomt aar til aar (oljepris-avhengig) og
+#         representerer en finansiell overforing, ikke ordinaer
+#         bevilgning til formaal.
+EKSKLUDERTE_POST_IDS = {280050}
+
 
 def _aarskolonne(df: pd.DataFrame) -> str:
     return "Ar" if "Ar" in df.columns else "År"
@@ -104,7 +115,11 @@ def bygg_oversikt(
     bev = last_bevilgning()
     bev_reell = beregn_reell_bevilgning(bev, basisaar=basisaar)
     post_typer = _distinkte_post_typer(bev_reell)
-    dep = aggreger_per_departement(bev_reell)
+    # Eksluder de ekskluderte post-id-ene fra departement-aggregat slik
+    # at realvekst-tall paa nivaa 0-tabellen ikke domineres av f.eks.
+    # overforinger til Statens pensjonsfond utland.
+    bev_for_aggregat = bev_reell[~bev_reell["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
+    dep = aggreger_per_departement(bev_for_aggregat)
     dep = marker_brudd_departement(dep)
 
     realvekst = realvekst_for_periode(
@@ -162,16 +177,19 @@ def bygg_oversikt(
     # Brukes på nivå 0 i frontend for å vise samlet realvekst.
     # Kapittel 0001-2999 = utgift, 3000-5999 = inntekt; post 90-99 er
     # utlån/kapitaltilskudd som default ekskluderes.
+    # EKSKLUDERTE_POST_IDS (f.eks. 280050 Overforing til SPU) holdes
+    # ute av samlet-aggregat fordi de ikke er meningsfulle for realvekst.
+    bev_aggregat = bev_reell[~bev_reell["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
     samlet = {}
     for type_navn, kap_filter in [
-        ("utgift", bev_reell["kapittel_nr"] < 3000),
-        ("inntekt", bev_reell["kapittel_nr"] >= 3000),
+        ("utgift", bev_aggregat["kapittel_nr"] < 3000),
+        ("inntekt", bev_aggregat["kapittel_nr"] >= 3000),
     ]:
         for p90_navn, post_filter in [
-            ("uten90", bev_reell["post_nr"] < 90),
-            ("med90", pd.Series(True, index=bev_reell.index)),
+            ("uten90", bev_aggregat["post_nr"] < 90),
+            ("med90", pd.Series(True, index=bev_aggregat.index)),
         ]:
-            del_df = bev_reell[kap_filter & post_filter]
+            del_df = bev_aggregat[kap_filter & post_filter]
             agg = (
                 del_df.groupby(aar_kol, as_index=False)
                 .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
@@ -182,6 +200,7 @@ def bygg_oversikt(
 
     meta = _metadata(basisaar, start, slutt, post_typer=post_typer)
     meta["samlet"] = samlet
+    meta["ekskluderte_post_ids"] = sorted(EKSKLUDERTE_POST_IDS)
     return {
         "metadata": meta,
         "departementer": departementer,
@@ -247,9 +266,14 @@ def bygg_departement(
 
     dep_navn = dep_data["Fagdepartement"].iloc[0]
 
+    # Aggregat-data for departement og programkategori-tidsserier
+    # ekskluderer EKSKLUDERTE_POST_IDS. Postene beholdes likevel i
+    # poster-listen slik at brukeren kan drilldowne.
+    dep_aggregat_data = dep_data[~dep_data["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
+
     # Departementets tidsserie
     dep_serie = (
-        dep_data.groupby(aar_kol, as_index=False)
+        dep_aggregat_data.groupby(aar_kol, as_index=False)
         .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
         .rename(columns={aar_kol: "Ar"})
     )
@@ -267,6 +291,10 @@ def bygg_departement(
     # aggregerer vi nå på det finere kategori-nivået. JSON-feltet
     # heter fortsatt 'programomraader' av historiske grunner, men
     # innholdet er programkategorier; frontend viser 'Programkategori'.
+    # Programkategori-tidsserier inkluderer alle poster, ogsa de som
+    # ekskluderes paa departement-/samlet-niva. Brukeren forventer aa
+    # se ekte tall paa drilldown-niva (f.eks. 'Statens pensjonsfond
+    # utland' = post 280050 selv).
     po_agg = aggreger_per_programkategori(dep_data)
     # Grupper kun på id; tekstvariasjoner ('m.v.' vs 'mv.') finnes i
     # rådata og gir dupliserte rader hvis vi grupperer på id+navn.

@@ -423,6 +423,16 @@ function postKategoriMatcher(post, type, inkluder90) {
   return true;
 }
 
+// Poster som ekskluderes fra aggregert realvekstanalyse paa samlet
+// statsbudsjett-niva og departements-niva. Brukes paa klient-siden i
+// visNiva1 og visNiva2. Listen synkroniseres med EKSKLUDERTE_POST_IDS
+// i src/data/bygg_datasett.py.
+const EKSKLUDERTE_POST_IDS_AGGREGAT = new Set([280050]);
+
+function postBidrarTilAggregat(post) {
+  return !EKSKLUDERTE_POST_IDS_AGGREGAT.has(post.post_id);
+}
+
 function terskelMatcher(element, terskel) {
   // Tar et element med beregnet realvekst_pst. Returnerer true hvis
   // terskel ikke er satt eller hvis |realvekst| >= terskel. Elementer
@@ -1011,6 +1021,7 @@ async function visNiva1(dep_id) {
   const filtrertePosterDep = [];
   for (const programkat of data.programomraader) {
     for (const p of programkat.poster) {
+      if (!postBidrarTilAggregat(p)) continue;
       if (postKategoriMatcher(p, typeNiva1, p90Niva1)) {
         filtrertePosterDep.push(p);
       }
