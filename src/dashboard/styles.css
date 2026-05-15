@@ -708,15 +708,7 @@ code {
   gap: var(--avstand-xs) var(--avstand-m);
 }
 
-.filter-posttype-valg {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--avstand-xs);
-  font-size: var(--font-storrelse-xs);
-  cursor: pointer;
-  padding: var(--avstand-2xs) var(--avstand-xs);
-  border-radius: var(--radius-s);
-}
+/* Base-styling for post-type-valg ligger lenger ned (chip-toggle). */
 
 .filter-posttype-valg input {
   accent-color: var(--farge-primaer);
@@ -803,6 +795,135 @@ code {
 .mangler-data {
   color: var(--farge-tekst-dempet);
   font-style: italic;
+}
+
+/* ---- Periode-presets ---- */
+
+.periode-presets {
+  display: flex;
+  gap: var(--avstand-xs);
+  flex-wrap: wrap;
+}
+
+.periode-preset[aria-pressed="true"] {
+  background: var(--farge-primaer);
+  color: var(--farge-tekst-invertert);
+  border-color: var(--farge-primaer);
+}
+
+.periode-preset[aria-pressed="true"]:hover,
+.periode-preset[aria-pressed="true"]:focus-visible {
+  background: var(--farge-primaer-mork);
+  border-color: var(--farge-primaer-mork);
+  color: var(--farge-tekst-invertert);
+}
+
+/* ---- Post-type som chip-toggle ---- */
+
+.filter-posttype-valg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avstand-xs);
+  font-size: var(--font-storrelse-xs);
+  cursor: pointer;
+  padding: var(--avstand-xs) var(--avstand-s);
+  border: 1px solid var(--farge-kant);
+  border-radius: 999px;
+  background: var(--farge-overflate);
+  transition: background var(--tid-rask) var(--easing),
+              border-color var(--tid-rask) var(--easing);
+}
+
+.filter-posttype-valg:hover {
+  border-color: var(--farge-primaer);
+  background: var(--farge-primaer-svak);
+}
+
+.filter-posttype-valg:has(input:checked) {
+  background: var(--farge-primaer-svak);
+  border-color: var(--farge-primaer);
+  color: var(--farge-primaer-mork);
+  font-weight: var(--font-vekt-medium);
+}
+
+/* ---- Drilldown-nav (hurtigknapper + nedtrekk) ---- */
+
+.drilldown-nav {
+  background: var(--farge-overflate);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-m);
+  padding: var(--avstand-m) var(--avstand-l);
+  margin-block-end: var(--avstand-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--avstand-m);
+  box-shadow: var(--skygge-1);
+}
+
+.drilldown-nav[hidden] {
+  display: none;
+}
+
+.drilldown-nav__rad {
+  display: flex;
+  align-items: center;
+  gap: var(--avstand-m);
+  flex-wrap: wrap;
+}
+
+.drilldown-nav__rad--velgere {
+  display: grid;
+  gap: var(--avstand-m);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .drilldown-nav__rad--velgere {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.drilldown-nav__etikett {
+  margin: 0;
+  font-size: var(--font-storrelse-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--farge-tekst-dempet);
+  font-weight: var(--font-vekt-medium);
+  flex: 0 0 auto;
+}
+
+.drilldown-nav__knapper {
+  display: flex;
+  gap: var(--avstand-xs);
+  flex-wrap: wrap;
+}
+
+.drilldown-nav__velger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--avstand-xs);
+  min-width: 0;
+}
+
+.drilldown-nav__velger select {
+  font: inherit;
+  padding: var(--avstand-s) var(--avstand-m);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-s);
+  background: var(--farge-overflate);
+  color: var(--farge-tekst);
+  width: 100%;
+}
+
+.drilldown-nav__velger select:focus {
+  border-color: var(--farge-kant-fokus);
+}
+
+.drilldown-nav__velger select:disabled {
+  background: var(--farge-overflate-dempet);
+  color: var(--farge-tekst-dempet);
+  cursor: not-allowed;
 }
 
 /* ---- Tabs (hovednavigasjon) ---- */

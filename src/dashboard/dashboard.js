@@ -648,6 +648,43 @@ function bindFilterUi() {
       .forEach((c) => (c.checked = false));
     settFilterStateOgRender({ q: "", pt: [], fra: null, til: null, tr: null });
   });
+
+  // Periode-presets: 'Siste 4 ar' setter fra=2022, til=2026.
+  // 'Tilpass' toggler synlighet av fra/til-velger.
+  const presetKnapper = document.querySelectorAll(".periode-preset");
+  presetKnapper.forEach((knapp) => {
+    knapp.addEventListener("click", () => {
+      const preset = knapp.dataset.preset;
+      if (preset === "siste4") {
+        // Hardkodet kompakt periode 2022-2026. Hvis metadata har annen
+        // slutt, bruker vi den; men start er alltid sluttår - 4.
+        const oversikt = OVERSIKT_CACHE;
+        const slutt = oversikt?.metadata?.slutt ?? 2026;
+        const fra = slutt - 4;
+        // Skjul tilpass-panelet ved preset-valg.
+        const tilpass = document.getElementById("filter-periode-tilpass");
+        if (tilpass) tilpass.hidden = true;
+        oppdaterPresetAriaTilstand("siste4");
+        settFilterStateOgRender({ fra, til: slutt });
+      } else if (preset === "tilpass") {
+        const tilpass = document.getElementById("filter-periode-tilpass");
+        if (tilpass) {
+          const apent = !tilpass.hidden;
+          tilpass.hidden = apent;
+          knapp.setAttribute("aria-expanded", apent ? "false" : "true");
+        }
+      }
+    });
+  });
+}
+
+function oppdaterPresetAriaTilstand(aktivPreset) {
+  document.querySelectorAll(".periode-preset").forEach((k) => {
+    if (k.dataset.preset === "siste4") {
+      k.setAttribute("aria-pressed", aktivPreset === "siste4" ? "true" : "false");
+      k.classList.toggle("knapp--sekundaer", aktivPreset !== "siste4");
+    }
+  });
 }
 
 function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
@@ -709,7 +746,16 @@ function synkroniserFilterInputer() {
     }
   }
   // Periode-dropdownene rebygges fra metadata i settUtFilterPanel,
-  // saa de plukker opp valgt periode der.
+  // saa de plukker opp valgt periode der. Preset-knappen markeres aktiv
+  // hvis brukerens valgte periode matcher 'siste 4 aar' fra metadata.
+  const meta = OVERSIKT_CACHE?.metadata;
+  if (meta) {
+    const { fra, til } = lesUrlTilstand();
+    const effektivFra = fra !== null ? fra : meta.start;
+    const effektivTil = til !== null ? til : meta.slutt;
+    const erSiste4 = effektivTil - effektivFra === 4 && effektivTil === meta.slutt;
+    oppdaterPresetAriaTilstand(erSiste4 ? "siste4" : null);
+  }
 }
 
 // --- VIEW: niv 0 (alle departementer) ---
@@ -1327,6 +1373,185 @@ function bruddSeksjonHtml(brudd) {
 
 // --- Feilvisning ---
 
+// --- Drilldown-nav (hurtigknapper + nedtrekk) ---
+
+async function rendreDrilldownNav() {
+  const el = document.getElementById("drilldown-nav");
+  if (!el) return;
+  const { tab, dep, po, post } = lesUrlTilstand();
+  if (tab === "priskalkulator") {
+    el.hidden = true;
+    el.innerHTML = "";
+    return;
+  }
+  el.hidden = false;
+
+  const oversikt = await hentOversikt();
+  // Bygg departement-options sortert paa navn for forutsigbar rekkefolge.
+  const deps = [...oversikt.departementer].sort((a, b) =>
+    a.navn.localeCompare(b.navn, "nb")
+  );
+  const depOpts = [
+    `<option value="">Velg departement …</option>`,
+    ...deps.map(
+      (d) =>
+        `<option value="${d.id}" ${d.id === dep ? "selected" : ""}>${escapeHtml(
+          d.navn
+        )}</option>`
+    ),
+  ].join("");
+
+  // Programomraade-options krever data fra valgt departement.
+  let poOpts = `<option value="">Velg programområde …</option>`;
+  let poDisabled = dep === null ? "disabled" : "";
+  if (dep !== null) {
+    try {
+      const data = await hentDepartement(dep);
+      const omraader = [...data.programomraader].sort((a, b) => a.nr - b.nr);
+      poOpts +=
+        omraader
+          .map(
+            (p) =>
+              `<option value="${p.nr}" ${
+                p.nr === po ? "selected" : ""
+              }>${p.nr} ${escapeHtml(p.navn)}</option>`
+          )
+          .join("");
+    } catch (e) {
+      poDisabled = "disabled";
+    }
+  }
+
+  // Post-options krever programomraade.
+  let postOpts = `<option value="">Velg post …</option>`;
+  let postDisabled = po === null ? "disabled" : "";
+  if (dep !== null && po !== null) {
+    try {
+      const data = await hentDepartement(dep);
+      const valgtPo = data.programomraader.find((p) => p.nr === po);
+      if (valgtPo) {
+        const poster = [...valgtPo.poster].sort((a, b) =>
+          a.kapittel_nr === b.kapittel_nr
+            ? a.post_nr - b.post_nr
+            : a.kapittel_nr - b.kapittel_nr
+        );
+        postOpts += poster
+          .map(
+            (p) =>
+              `<option value="${p.post_id}" ${
+                p.post_id === post ? "selected" : ""
+              }>kap. ${p.kapittel_nr} post ${String(p.post_nr).padStart(
+                2,
+                "0"
+              )} — ${escapeHtml(p.post_navn)}</option>`
+          )
+          .join("");
+      } else {
+        postDisabled = "disabled";
+      }
+    } catch (e) {
+      postDisabled = "disabled";
+    }
+  }
+
+  const niva = post !== null ? 3 : po !== null ? 2 : dep !== null ? 1 : 0;
+
+  el.innerHTML = `
+    <div class="drilldown-nav__rad">
+      <p class="drilldown-nav__etikett">Hurtignavigasjon</p>
+      <div class="drilldown-nav__knapper">
+        <button
+          type="button"
+          class="knapp ${niva === 0 ? "" : "knapp--sekundaer"}"
+          data-niva-knapp="0"
+        >
+          Alle departementer
+        </button>
+        ${
+          dep !== null
+            ? `<button type="button" class="knapp ${
+                niva === 1 ? "" : "knapp--sekundaer"
+              }" data-niva-knapp="1" data-dep="${dep}">Departement</button>`
+            : ""
+        }
+        ${
+          po !== null
+            ? `<button type="button" class="knapp ${
+                niva === 2 ? "" : "knapp--sekundaer"
+              }" data-niva-knapp="2" data-dep="${dep}" data-po="${po}">Programområde</button>`
+            : ""
+        }
+      </div>
+    </div>
+    <div class="drilldown-nav__rad drilldown-nav__rad--velgere">
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Departement</span>
+        <select id="dd-dep">${depOpts}</select>
+      </label>
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Programområde</span>
+        <select id="dd-po" ${poDisabled}>${poOpts}</select>
+      </label>
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Post</span>
+        <select id="dd-post" ${postDisabled}>${postOpts}</select>
+      </label>
+    </div>
+  `;
+
+  bindDrilldownNavUi();
+}
+
+function bindDrilldownNavUi() {
+  const ddDep = document.getElementById("dd-dep");
+  const ddPo = document.getElementById("dd-po");
+  const ddPost = document.getElementById("dd-post");
+
+  if (ddDep) {
+    ddDep.addEventListener("change", () => {
+      const v = ddDep.value;
+      naviger({
+        dep: v ? parseInt(v, 10) : null,
+        po: null,
+        post: null,
+      });
+    });
+  }
+  if (ddPo) {
+    ddPo.addEventListener("change", () => {
+      const v = ddPo.value;
+      const { dep } = lesUrlTilstand();
+      naviger({
+        dep,
+        po: v ? parseInt(v, 10) : null,
+        post: null,
+      });
+    });
+  }
+  if (ddPost) {
+    ddPost.addEventListener("change", () => {
+      const v = ddPost.value;
+      const { dep, po } = lesUrlTilstand();
+      naviger({
+        dep,
+        po,
+        post: v ? parseInt(v, 10) : null,
+      });
+    });
+  }
+
+  document.querySelectorAll("[data-niva-knapp]").forEach((knapp) => {
+    knapp.addEventListener("click", () => {
+      const niva = parseInt(knapp.dataset.nivaKnapp, 10);
+      const depId = knapp.dataset.dep ? parseInt(knapp.dataset.dep, 10) : null;
+      const poNr = knapp.dataset.po ? parseInt(knapp.dataset.po, 10) : null;
+      if (niva === 0) naviger({ dep: null, po: null, post: null });
+      else if (niva === 1) naviger({ dep: depId, po: null, post: null });
+      else if (niva === 2) naviger({ dep: depId, po: poNr, post: null });
+    });
+  });
+}
+
 // --- Tab-navigering og priskalkulator ---
 
 function oppdaterTabUi(tab) {
@@ -1554,9 +1779,11 @@ async function router() {
     if (tab === "priskalkulator") {
       // Skjul filter-panel og brodsmulesti — de hoerer ikke til kalkulatoren.
       settPanelerSynlige(false);
+      await rendreDrilldownNav();
       await visPriskalkulator();
     } else {
       settPanelerSynlige(true);
+      await rendreDrilldownNav();
       if (dep === null) {
         await visNiva0();
       } else if (po === null) {

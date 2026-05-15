@@ -76,7 +76,26 @@
         </fieldset>
         <fieldset class="filter-felt filter-felt--periode">
           <legend class="filter-felt__etikett">Sammenligningsperiode</legend>
-          <div class="filter-periode">
+          <div class="periode-presets" id="periode-presets">
+            <button
+              type="button"
+              class="knapp knapp--sekundaer periode-preset"
+              data-preset="siste4"
+              aria-pressed="false"
+            >
+              Siste 4 år
+            </button>
+            <button
+              type="button"
+              class="knapp knapp--sekundaer periode-preset"
+              data-preset="tilpass"
+              aria-expanded="false"
+              aria-controls="filter-periode-tilpass"
+            >
+              Tilpass
+            </button>
+          </div>
+          <div class="filter-periode" id="filter-periode-tilpass" hidden>
             <label>
               <span class="filter-felt__hjelp">Fra</span>
               <select id="filter-fra-aar"></select>
@@ -114,6 +133,12 @@
       </div>
       <p class="filter-status" id="filter-status" aria-live="polite"></p>
     </section>
+
+    <section
+      class="drilldown-nav"
+      id="drilldown-nav"
+      aria-label="Hurtig drilldown-navigasjon"
+    ></section>
 
     <main id="hovedinnhold" aria-live="polite" aria-busy="true">
       <p class="laster">Laster data …</p>
