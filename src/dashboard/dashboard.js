@@ -380,10 +380,13 @@ function rendrerTidsserie(elementId, tidsserie, opts = {}) {
 function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) {
   // rader = [{navn, realvekst_pst, reell_start, reell_slutt, klikkbar_url}]
   const primaerFarge = lesCssToken("--farge-primaer") || "#1a3a6d";
+  const primaerMork = lesCssToken("--farge-primaer-mork") || "#0a1f3d";
   const advarselFarge = lesCssToken("--farge-advarsel") || "#8a5a00";
   const tekstFarge = lesCssToken("--farge-tekst") || "#1a1a1a";
+  const tekstInvertert = lesCssToken("--farge-tekst-invertert") || "#ffffff";
   const dempetFarge = lesCssToken("--farge-tekst-dempet") || "#6e6e6e";
   const kantFarge = lesCssToken("--graf-rutenett") || "#d4d4d4";
+  const overflateFarge = lesCssToken("--farge-overflate") || "#ffffff";
   const fontStack = lesCssToken("--font-stack-sans") || "system-ui, sans-serif";
 
   const sortert = [...rader].sort((a, b) => {
@@ -401,11 +404,21 @@ function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) 
     orientation: "h",
     x: sortert.map((r) => (r[metrikk] === null ? 0 : r[metrikk])),
     y: sortert.map((r) => r.navn),
-    marker: { color: farger },
+    marker: {
+      color: farger,
+      // Liten kant mot bakgrunnen gjoer at stolpene tydeligere ser
+      // ut som knapper man kan klikke paa.
+      line: { color: overflateFarge, width: 1 },
+    },
     text: sortert.map((r) => formaterProsent(r[metrikk])),
     textposition: "outside",
     cliponaxis: false,
-    hovertemplate: "<b>%{y}</b><br>Realvekst: %{x:.1f} %<extra></extra>",
+    hovertemplate: "<b>%{y}</b><br>Realvekst: %{x:.1f} %<br><i>Klikk for aa se under</i><extra></extra>",
+    hoverlabel: {
+      bgcolor: primaerMork,
+      bordercolor: primaerMork,
+      font: { color: tekstInvertert, family: fontStack, size: 13 },
+    },
   };
 
   const layout = {
@@ -447,7 +460,11 @@ function renderBrodsmule(steg) {
     } else {
       const a = document.createElement("a");
       a.href = s.url;
-      a.innerHTML = `${escapeHtml(s.tekst)}${badgeHtml}`;
+      // Retningspil signaliserer at lenken gaar tilbake i hierarkiet.
+      a.innerHTML = `<span class="brodsmule__pil" aria-hidden="true">‹</span>${escapeHtml(
+        s.tekst
+      )}${badgeHtml}`;
+      a.setAttribute("aria-label", `Gaa tilbake til ${s.tekst}`);
       a.addEventListener("click", (e) => {
         e.preventDefault();
         // Konverter url tilbake til state
@@ -591,6 +608,7 @@ function bindFilterUi() {
 function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
   const status = document.getElementById("filter-status");
   const nullstill = document.getElementById("filter-nullstill");
+  const panel = document.querySelector(".filter-panel");
   const { q, pt, fra, til, tr } = lesUrlTilstand();
   const periodeEndret =
     metadata !== undefined &&
@@ -598,6 +616,9 @@ function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
       (til !== null && til !== metadata.slutt));
   const aktivt = q || pt.length > 0 || periodeEndret || tr !== null;
   nullstill.hidden = !aktivt;
+  if (panel) {
+    panel.classList.toggle("filter-panel--aktivt", Boolean(aktivt));
+  }
   const deler = [];
   if (q || pt.length > 0 || tr !== null) {
     deler.push(`viser ${antallVist} av ${antallTotalt} ${etikett}`);
@@ -716,18 +737,22 @@ async function visNiva0() {
 
     <section class="toppliste" aria-labelledby="topp-tittel">
       <header class="seksjon-header">
+        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
         <h2 id="topp-tittel">Realvekst per departement</h2>
         <p class="seksjon-beskrivelse">
           Sortert synkende på realvekst i perioden ${periode.fra}–${periode.til},
           i reelle ${data.metadata.basisaar}-kroner. Klikk på en stolpe
-          for å se programområder under departementet, eller bruk
-          tabellen under for tastaturnavigasjon. Departementer med
-          strukturelle brudd er markert i oransje og plassert nederst.
+          eller en rad i tabellen under for å se programområder under
+          departementet. Departementer med strukturelle brudd er markert
+          i oransje og plassert nederst.
         </p>
       </header>
       <figure>
-        <div id="toppliste-graf" class="graf" role="img"
-             aria-label="Horisontal stolpegraf med realvekst per departement"></div>
+        <div class="graf-wrapper">
+          <p class="klikk-hint" aria-hidden="true">Klikk en stolpe →</p>
+          <div id="toppliste-graf" class="graf" role="img"
+               aria-label="Horisontal stolpegraf med realvekst per departement"></div>
+        </div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
           ${depTabell(filtrerteDeps, periode)}
@@ -831,17 +856,21 @@ async function visNiva1(dep_id) {
 
     <section class="toppliste" aria-labelledby="po-tittel">
       <header class="seksjon-header">
+        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
         <h2 id="po-tittel">Programområder under ${escapeHtml(dep.navn)}</h2>
         <p class="seksjon-beskrivelse">
-          Klikk på en stolpe eller en rad i tabellen for å gå videre til programområdet.
+          Klikk på en stolpe eller en rad i tabellen for å se postene under programområdet.
         </p>
       </header>
       ${
         filtrerteProgramomraader.length === 0
           ? tomStateHtml()
           : `<figure>
-        <div id="po-graf" class="graf" role="img"
-             aria-label="Horisontal stolpegraf med realvekst per programområde"></div>
+        <div class="graf-wrapper">
+          <p class="klikk-hint" aria-hidden="true">Klikk en stolpe →</p>
+          <div id="po-graf" class="graf" role="img"
+               aria-label="Horisontal stolpegraf med realvekst per programområde"></div>
+        </div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
           ${poTabell(filtrerteProgramomraader, dep_id)}
@@ -865,13 +894,8 @@ async function visNiva1(dep_id) {
     });
   }
 
-  // Aktiver tabell-rader som lenker
-  document.querySelectorAll("[data-naviger-po]").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      naviger({ dep: dep_id, po: el.dataset.navigerPo });
-    });
-  });
+  // Tabell-rad-klikk og a[data-naviger-*]-klikk haandteres av en
+  // global handler i router() etter at innholdet er rendret.
 }
 
 // --- VIEW: niv 2 (ett programomraade) ---
@@ -951,18 +975,22 @@ async function visNiva2(dep_id, po_nr) {
 
     <section class="toppliste">
       <header class="seksjon-header">
+        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
         <h2>Poster under programområde ${po.nr}</h2>
         <p class="seksjon-beskrivelse">
-          Sortert synkende på realvekst. Klikk på en stolpe eller bruk
-          tabellen under for å se en post i detalj.
+          Sortert synkende på realvekst. Klikk på en stolpe eller en rad
+          i tabellen under for å se en post i detalj.
         </p>
       </header>
       ${
         filtrertePoster.length === 0
           ? tomStateHtml()
           : `<figure>
-        <div id="poster-graf" class="graf" role="img"
-             aria-label="Horisontal stolpegraf med realvekst per post"></div>
+        <div class="graf-wrapper">
+          <p class="klikk-hint" aria-hidden="true">Klikk en stolpe →</p>
+          <div id="poster-graf" class="graf" role="img"
+               aria-label="Horisontal stolpegraf med realvekst per post"></div>
+        </div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
           ${posterTabell(filtrertePoster, dep_id, po.nr)}
@@ -1093,18 +1121,19 @@ function depTabell(departementer, periode) {
           )}</span>`
         : "";
       return `
-    <tr>
+    <tr class="rad--klikkbar" data-naviger-dep="${d.id}">
       <th scope="row"><a href="${lagUrl({ dep: d.id })}" data-naviger-dep="${d.id}">${escapeHtml(d.navn)}</a>${badge}</th>
       <td class="tall-kol">${realvekstCelle}</td>
       <td class="tall-kol">${formaterMrd(d.reell_start)}</td>
       <td class="tall-kol">${formaterMrd(d.reell_slutt)}</td>
       <td>${merknad}</td>
+      <td class="kol-chevron" aria-hidden="true">›</td>
     </tr>`;
     })
     .join("");
   return `
     <table>
-      <caption class="visuelt-skjult">Realvekst per departement</caption>
+      <caption class="visuelt-skjult">Realvekst per departement. Hver rad lenker til departementsdetaljer.</caption>
       <thead>
         <tr>
           <th scope="col">Departement</th>
@@ -1112,6 +1141,7 @@ function depTabell(departementer, periode) {
           <th scope="col" class="tall-kol">Reell ${periode.fra} (mrd. kr)</th>
           <th scope="col" class="tall-kol">Reell ${periode.til} (mrd. kr)</th>
           <th scope="col">Merknad</th>
+          <th scope="col" class="kol-chevron" aria-hidden="true"></th>
         </tr>
       </thead>
       <tbody>${rader}</tbody>
@@ -1127,21 +1157,23 @@ function poTabell(programomraader, dep_id) {
           ? `<span class="mangler-data" title="Mangler endepunkt for sammenligning">—</span>`
           : formaterProsent(po.realvekst_pst);
       return `
-    <tr>
+    <tr class="rad--klikkbar" data-naviger-po="${po.nr}" data-dep-id="${dep_id}">
       <th scope="row"><a href="${lagUrl({ dep: dep_id, po: po.nr })}" data-naviger-po="${po.nr}">${po.nr} ${escapeHtml(po.navn)}</a></th>
       <td class="tall-kol">${realvekstCelle}</td>
       <td class="tall-kol">${po.poster.length}</td>
+      <td class="kol-chevron" aria-hidden="true">›</td>
     </tr>`;
     })
     .join("");
   return `
     <table>
-      <caption class="visuelt-skjult">Realvekst per programområde under valgt departement</caption>
+      <caption class="visuelt-skjult">Realvekst per programområde under valgt departement. Hver rad lenker til programområdedetaljer.</caption>
       <thead>
         <tr>
           <th scope="col">Programområde</th>
           <th scope="col" class="tall-kol">Realvekst (pst.)</th>
           <th scope="col" class="tall-kol">Poster</th>
+          <th scope="col" class="kol-chevron" aria-hidden="true"></th>
         </tr>
       </thead>
       <tbody>${rader}</tbody>
@@ -1157,25 +1189,27 @@ function posterTabell(poster, dep_id, po_nr) {
           ? `<span class="mangler-data" title="Mangler endepunkt for sammenligning">—</span>`
           : formaterProsent(p.realvekst_pst);
       return `
-    <tr>
+    <tr class="rad--klikkbar" data-naviger-post="${p.post_id}" data-dep-id="${dep_id}" data-po-nr="${po_nr}">
       <th scope="row">
-        <a href="${lagUrl({ dep: dep_id, po: po_nr, post: p.post_id })}">
+        <a href="${lagUrl({ dep: dep_id, po: po_nr, post: p.post_id })}" data-naviger-post="${p.post_id}">
           kap. ${p.kapittel_nr} post ${String(p.post_nr).padStart(2, "0")} – ${escapeHtml(p.post_navn)}
         </a>
       </th>
       <td class="tall-kol">${realvekstCelle}</td>
       <td>${p.deflator_type === "kommunal" ? "Kommunal" : "Statlig"}</td>
+      <td class="kol-chevron" aria-hidden="true">›</td>
     </tr>`;
     })
     .join("");
   return `
     <table>
-      <caption class="visuelt-skjult">Realvekst per post under valgt programområde</caption>
+      <caption class="visuelt-skjult">Realvekst per post under valgt programområde. Hver rad lenker til postdetaljer.</caption>
       <thead>
         <tr>
           <th scope="col">Post</th>
           <th scope="col" class="tall-kol">Realvekst (pst.)</th>
           <th scope="col">Deflator</th>
+          <th scope="col" class="kol-chevron" aria-hidden="true"></th>
         </tr>
       </thead>
       <tbody>${rader}</tbody>
@@ -1287,11 +1321,65 @@ async function router() {
       await visNiva3(dep, po, post);
     }
 
-    // Etabler klikk-håndtering for tabell-lenker (depTabell)
-    document.querySelectorAll("[data-naviger-dep]").forEach((el) => {
+    // Etabler klikk-haandtering for tabell-rader og lenker.
+    // Rader har class="rad--klikkbar" og data-naviger-* attributter;
+    // hele raden er klikkbar, men lenken i kolonnen er ogsaa
+    // tab-bar og blir navigert separat av sin egen handler.
+    document.querySelectorAll("tr.rad--klikkbar").forEach((rad) => {
+      rad.addEventListener("click", (e) => {
+        // Hvis brukeren klikker direkte paa <a>, la den lenkens
+        // egen handler ta over for aa unngaa dobbel-navigering.
+        if (e.target.closest("a")) return;
+        const depId = rad.dataset.navigerDep || rad.dataset.depId;
+        const poNr = rad.dataset.navigerPo || rad.dataset.poNr;
+        const postId = rad.dataset.navigerPost;
+        if (postId) {
+          naviger({
+            dep: parseInt(depId, 10),
+            po: parseInt(poNr, 10),
+            post: parseInt(postId, 10),
+          });
+        } else if (poNr) {
+          naviger({ dep: parseInt(depId, 10), po: parseInt(poNr, 10) });
+        } else if (depId) {
+          naviger({ dep: parseInt(depId, 10) });
+        }
+      });
+    });
+
+    // Lenker inni rader: la dem fungere som SPA-navigering.
+    document.querySelectorAll("a[data-naviger-dep]").forEach((el) => {
       el.addEventListener("click", (e) => {
         e.preventDefault();
         naviger({ dep: parseInt(el.dataset.navigerDep, 10) });
+      });
+    });
+    document.querySelectorAll("a[data-naviger-po]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const rad = el.closest("tr");
+        const depId = rad?.dataset.depId;
+        if (depId) {
+          naviger({
+            dep: parseInt(depId, 10),
+            po: parseInt(el.dataset.navigerPo, 10),
+          });
+        }
+      });
+    });
+    document.querySelectorAll("a[data-naviger-post]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const rad = el.closest("tr");
+        const depId = rad?.dataset.depId;
+        const poNr = rad?.dataset.poNr;
+        if (depId && poNr) {
+          naviger({
+            dep: parseInt(depId, 10),
+            po: parseInt(poNr, 10),
+            post: parseInt(el.dataset.navigerPost, 10),
+          });
+        }
       });
     });
   } catch (err) {
