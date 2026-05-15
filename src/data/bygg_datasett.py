@@ -34,7 +34,7 @@ import pandas as pd
 
 from src.analyse.aggregering import (
     aggreger_per_departement,
-    aggreger_per_programomraade,
+    aggreger_per_programkategori,
     realvekst_for_periode,
 )
 from src.analyse.brudd import marker_brudd_departement
@@ -157,8 +157,33 @@ def bygg_oversikt(
         )
     )
 
+    # Samlet tidsserie for hele statsbudsjettet, splittet på fire
+    # kombinasjoner av type (utgift/inntekt) og 90-poster (av/på).
+    # Brukes på nivå 0 i frontend for å vise samlet realvekst.
+    # Kapittel 0001-2999 = utgift, 3000-5999 = inntekt; post 90-99 er
+    # utlån/kapitaltilskudd som default ekskluderes.
+    samlet = {}
+    for type_navn, kap_filter in [
+        ("utgift", bev_reell["kapittel_nr"] < 3000),
+        ("inntekt", bev_reell["kapittel_nr"] >= 3000),
+    ]:
+        for p90_navn, post_filter in [
+            ("uten90", bev_reell["post_nr"] < 90),
+            ("med90", pd.Series(True, index=bev_reell.index)),
+        ]:
+            del_df = bev_reell[kap_filter & post_filter]
+            agg = (
+                del_df.groupby(aar_kol, as_index=False)
+                .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
+                .rename(columns={aar_kol: "Ar"})
+                .sort_values("Ar")
+            )
+            samlet[f"{type_navn}_{p90_navn}"] = _tidsserie_fra_aggregert(agg)
+
+    meta = _metadata(basisaar, start, slutt, post_typer=post_typer)
+    meta["samlet"] = samlet
     return {
-        "metadata": _metadata(basisaar, start, slutt, post_typer=post_typer),
+        "metadata": meta,
         "departementer": departementer,
     }
 
@@ -237,17 +262,25 @@ def bygg_departement(
     har_brudd = bool(dep_med_brudd["har_strukturelt_brudd"].iloc[0])
     brudd_beskrivelse = dep_med_brudd["brudd_beskrivelse"].iloc[0] if har_brudd else None
 
-    # Programområder under departementet
-    po_agg = aggreger_per_programomraade(dep_data)
+    # Programkategorier under departementet. Per brukerønske (PR der
+    # 'programområde' ble erstattet av 'programkategori' i dashbordet)
+    # aggregerer vi nå på det finere kategori-nivået. JSON-feltet
+    # heter fortsatt 'programomraader' av historiske grunner, men
+    # innholdet er programkategorier; frontend viser 'Programkategori'.
+    po_agg = aggreger_per_programkategori(dep_data)
+    # Grupper kun på id; tekstvariasjoner ('m.v.' vs 'mv.') finnes i
+    # rådata og gir dupliserte rader hvis vi grupperer på id+navn.
     programomraader = []
-    for (po_nr, po_navn), gr in po_agg.groupby(
-        ["Programområde_nr", "Programområde"], sort=False
-    ):
+    for po_nr, gr in po_agg.groupby("Programkategori_id", sort=False):
+        po_navn = gr["Programkategori"].iloc[0]
+        gr = gr.groupby("Ar", as_index=False).agg(
+            nominell=("nominell", "sum"), reell=("reell", "sum")
+        )
         po_tidsserie = _tidsserie_fra_aggregert(gr.sort_values("Ar"))
         po_realvekst = _realvekst_fra_tidsserie(po_tidsserie, start, slutt)
 
-        # Poster under dette programområdet
-        po_rader = dep_data[dep_data["Programområde_nr"] == po_nr]
+        # Poster under denne programkategorien
+        po_rader = dep_data[dep_data["Programkategori_id"] == po_nr]
         poster = []
         post_grupper = po_rader.groupby(
             [

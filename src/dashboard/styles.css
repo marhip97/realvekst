@@ -389,6 +389,14 @@ code {
   color: var(--farge-tekst);
 }
 
+.metadata__hjelp {
+  display: block;
+  margin-block-start: var(--avstand-2xs);
+  font-size: var(--font-storrelse-xs);
+  color: var(--farge-tekst-dempet);
+  font-style: italic;
+}
+
 /* ---- Brudd-advarsel (inline) ---- */
 
 .brudd-advarsel {
@@ -879,7 +887,25 @@ code {
 
 @media (min-width: 768px) {
   .drilldown-nav__rad--velgere {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .drilldown-nav__rad--velgere {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.drilldown-nav__rad--periode {
+  display: grid;
+  gap: var(--avstand-m);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .drilldown-nav__rad--periode {
+    grid-template-columns: 1fr 1fr 1.2fr;
   }
 }
 
