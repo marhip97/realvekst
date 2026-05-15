@@ -251,6 +251,27 @@ function snuTidsserieForInntekt(tidsserie, snu) {
   }));
 }
 
+function aggregerPostTidsserier(poster) {
+  // Returnerer en aggregert tidsserie ved aa summere nominell og
+  // reell paa tvers av postene per aar. Brukes til aa vise KPI og
+  // graf for filtrerte utvalg (f.eks. bare inntektsposter under en
+  // programkategori).
+  const perAr = new Map();
+  for (const p of poster) {
+    for (const punkt of p.tidsserie) {
+      const eksisterende = perAr.get(punkt.ar) || {
+        ar: punkt.ar,
+        nominell: 0,
+        reell: 0,
+      };
+      if (punkt.nominell !== null) eksisterende.nominell += punkt.nominell;
+      if (punkt.reell !== null) eksisterende.reell += punkt.reell;
+      perAr.set(punkt.ar, eksisterende);
+    }
+  }
+  return [...perAr.values()].sort((a, b) => a.ar - b.ar);
+}
+
 function realvekstFraTidsserie(tidsserie, fraAr, tilAr) {
   const fraP = tidsserie.find((p) => p.ar === fraAr);
   const tilP = tidsserie.find((p) => p.ar === tilAr);
@@ -982,8 +1003,22 @@ async function visNiva1(dep_id) {
     _po_nr: po.nr,
   }));
 
-  const depRv = realvekstFraTidsserie(dep.tidsserie, periode.fra, periode.til);
-  const startReell = depRv.fra?.reell;
+  // Bygg aggregert tidsserie fra postene som matcher type/p90-filteret
+  // paa tvers av alle programkategorier under departementet. Snu
+  // fortegn for inntekter.
+  const { type: typeNiva1, p90: p90Niva1 } = lesUrlTilstand();
+  const snuFortegnDep = typeNiva1 === "inntekt";
+  const filtrertePosterDep = [];
+  for (const programkat of data.programomraader) {
+    for (const p of programkat.poster) {
+      if (postKategoriMatcher(p, typeNiva1, p90Niva1)) {
+        filtrertePosterDep.push(p);
+      }
+    }
+  }
+  const aggrTidsserieDep = aggregerPostTidsserier(filtrertePosterDep);
+  const visTidsserieDep = snuTidsserieForInntekt(aggrTidsserieDep, snuFortegnDep);
+  const depRv = realvekstFraTidsserie(visTidsserieDep, periode.fra, periode.til);
   const sluttReell = depRv.til?.reell;
   const sluttNominell = depRv.til?.nominell;
 
@@ -1010,11 +1045,11 @@ async function visNiva1(dep_id) {
              aria-label="Tidsserie nominell og reell bevilgning"></div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${tidsserieTabell(dep.tidsserie)}
+          ${tidsserieTabell(visTidsserieDep)}
         </details>
         <figcaption class="metode-merknad">
-          Reell bevilgning i ${data.metadata.basisaar}-kroner. Deflator anvendt per
-          postnummer (60–69 = kommunal, ellers statlig).
+          Reell bevilgning i ${effektivtBasisaar(data.metadata)}-kroner. Deflator anvendt per
+          postnummer (60–69 = kommunal, ellers statlig).${snuFortegnDep ? " Inntektsbeløp vises som positive tall (originaldata har negativt fortegn)." : ""}
         </figcaption>
       </figure>
     </section>
@@ -1046,7 +1081,7 @@ async function visNiva1(dep_id) {
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerTidsserie("tidsserie-graf", dep.tidsserie);
+  rendrerTidsserie("tidsserie-graf", visTidsserieDep);
   if (filtrerteProgramomraader.length > 0) {
     rendrerToppliste("po-graf", po_rader);
   }
@@ -1078,7 +1113,6 @@ async function visNiva2(dep_id, po_nr) {
   const { q, pt, tr, type, p90 } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
-  const poRv = realvekstFraTidsserie(po.tidsserie, periode.fra, periode.til);
   const allePoster = po.poster.map((p) => ({
     ...p,
     realvekst_pst: realvekstFraTidsserie(p.tidsserie, periode.fra, periode.til)
@@ -1095,6 +1129,14 @@ async function visNiva2(dep_id, po_nr) {
     data.metadata
   );
 
+  // Bygg en aggregert tidsserie fra de filtrerte postene slik at KPI
+  // og graf reflekterer det faktiske utvalget (f.eks. bare inntekts-
+  // poster). For inntekt snus fortegnet saa belop vises som positive.
+  const snuFortegn = type === "inntekt";
+  const aggrTidsserie = aggregerPostTidsserier(filtrertePoster);
+  const visTidsserie = snuTidsserieForInntekt(aggrTidsserie, snuFortegn);
+  const poRv = realvekstFraTidsserie(visTidsserie, periode.fra, periode.til);
+
   renderBrodsmule([
     { tekst: "Alle departementer", url: lagUrl() },
     {
@@ -1105,7 +1147,6 @@ async function visNiva2(dep_id, po_nr) {
     { tekst: `${po.nr} ${po.navn}`, url: null },
   ]);
 
-  const startReell = poRv.fra?.reell;
   const sluttReell = poRv.til?.reell;
   const sluttNominell = poRv.til?.nominell;
 
@@ -1127,15 +1168,16 @@ async function visNiva2(dep_id, po_nr) {
 
     <section class="tidsserie-seksjon">
       <header class="seksjon-header">
-        <h2>Utvikling 2014–2026</h2>
+        <h2>Utvikling ${periode.fra}–${periode.til}</h2>
       </header>
       <figure>
         <div id="tidsserie-graf" class="graf" role="img"
              aria-label="Tidsserie nominell og reell bevilgning"></div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${tidsserieTabell(po.tidsserie)}
+          ${tidsserieTabell(visTidsserie)}
         </details>
+        ${snuFortegn ? `<figcaption class="metode-merknad">Inntektsbeløp vises som positive tall (originaldata har negativt fortegn).</figcaption>` : ""}
       </figure>
     </section>
 
@@ -1167,7 +1209,7 @@ async function visNiva2(dep_id, po_nr) {
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerTidsserie("tidsserie-graf", po.tidsserie);
+  rendrerTidsserie("tidsserie-graf", visTidsserie);
   if (filtrertePoster.length > 0) {
     rendrerToppliste("poster-graf", post_rader);
     document.getElementById("poster-graf").on("plotly_click", (ev) => {
