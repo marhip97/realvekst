@@ -158,6 +158,10 @@ function realvekstFraTidsserie(tidsserie, fraAr, tilAr) {
   };
 }
 
+// Flagg som settes naar router skal flytte fokus til ny seksjon
+// (drilldown eller popstate), men ikke ved rene filter-oppdateringer.
+let SKAL_FLYTTE_FOKUS = false;
+
 function naviger(state) {
   const naa = lesUrlTilstand();
   const samlet = {
@@ -170,6 +174,7 @@ function naviger(state) {
   };
   const url = lagUrl(samlet);
   window.history.pushState(samlet, "", url);
+  SKAL_FLYTTE_FOKUS = true;
   router();
 }
 
@@ -250,6 +255,34 @@ function terskelMatcher(element, terskel) {
     return false;
   }
   return Math.abs(element.realvekst_pst) >= terskel;
+}
+
+// --- Tilgjengelighetshjelpere ---
+
+function foretrekkerReduserteAnimasjoner() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function plotlyConfig() {
+  return {
+    displayModeBar: false,
+    responsive: true,
+    locale: "nb",
+    // Slaar av Plotly-overgangsanimasjoner naar bruker har satt
+    // prefers-reduced-motion: reduce. Animasjon styres ogsaa av
+    // layout.transition i nyere Plotly, men config-flagget gir
+    // robusthet paa tvers av versjoner.
+  };
+}
+
+function plotlyLayoutTransisjon() {
+  return foretrekkerReduserteAnimasjoner()
+    ? { duration: 0 }
+    : { duration: 250, easing: "cubic-in-out" };
 }
 
 // --- Cache for departement-filer ---
@@ -336,10 +369,10 @@ function rendrerTidsserie(elementId, tidsserie, opts = {}) {
       x: 0,
     },
     hovermode: "x unified",
+    transition: plotlyLayoutTransisjon(),
   };
 
-  const config = { displayModeBar: false, responsive: true, locale: "nb" };
-  Plotly.newPlot(elementId, [traceNominell, traceReell], layout, config);
+  Plotly.newPlot(elementId, [traceNominell, traceReell], layout, plotlyConfig());
 }
 
 // --- Toppliste-graf (delt mellom niv 0, 1, 2) ---
@@ -390,10 +423,10 @@ function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) 
     },
     yaxis: { automargin: true, tickfont: { size: 13 } },
     showlegend: false,
+    transition: plotlyLayoutTransisjon(),
   };
 
-  const config = { displayModeBar: false, responsive: true, locale: "nb" };
-  Plotly.newPlot(elementId, [trace], layout, config);
+  Plotly.newPlot(elementId, [trace], layout, plotlyConfig());
 }
 
 // --- Brodsmulesti ---
@@ -686,9 +719,10 @@ async function visNiva0() {
         <h2 id="topp-tittel">Realvekst per departement</h2>
         <p class="seksjon-beskrivelse">
           Sortert synkende på realvekst i perioden ${periode.fra}–${periode.til},
-          i reelle ${data.metadata.basisaar}-kroner. Klikk på en
-          stolpe for å se programområder under departementet. Departementer med strukturelle
-          brudd er markert i oransje og plassert nederst.
+          i reelle ${data.metadata.basisaar}-kroner. Klikk på en stolpe
+          for å se programområder under departementet, eller bruk
+          tabellen under for tastaturnavigasjon. Departementer med
+          strukturelle brudd er markert i oransje og plassert nederst.
         </p>
       </header>
       <figure>
@@ -919,7 +953,8 @@ async function visNiva2(dep_id, po_nr) {
       <header class="seksjon-header">
         <h2>Poster under programområde ${po.nr}</h2>
         <p class="seksjon-beskrivelse">
-          Sortert synkende på realvekst. Klikk på en stolpe for å se posten i detalj.
+          Sortert synkende på realvekst. Klikk på en stolpe eller bruk
+          tabellen under for å se en post i detalj.
         </p>
       </header>
       ${
@@ -1101,6 +1136,7 @@ function poTabell(programomraader, dep_id) {
     .join("");
   return `
     <table>
+      <caption class="visuelt-skjult">Realvekst per programområde under valgt departement</caption>
       <thead>
         <tr>
           <th scope="col">Programområde</th>
@@ -1134,6 +1170,7 @@ function posterTabell(poster, dep_id, po_nr) {
     .join("");
   return `
     <table>
+      <caption class="visuelt-skjult">Realvekst per post under valgt programområde</caption>
       <thead>
         <tr>
           <th scope="col">Post</th>
@@ -1159,6 +1196,7 @@ function tidsserieTabell(tidsserie, alltidSynlig = false) {
     .join("");
   const tabell = `
     <table>
+      <caption class="visuelt-skjult">Nominell og reell bevilgning per år</caption>
       <thead>
         <tr>
           <th scope="col">År</th>
@@ -1260,6 +1298,19 @@ async function router() {
     visFeil(err);
   } finally {
     main.setAttribute("aria-busy", "false");
+    if (SKAL_FLYTTE_FOKUS) {
+      // Sett fokus paa foerste overskrift i nytt innhold slik at
+      // skjermlesere annonserer nivaaskiftet og tastatur-brukere
+      // ikke blir staaende i et utdatert grafelement.
+      const foersteH = main.querySelector("h2, h1");
+      if (foersteH) {
+        if (!foersteH.hasAttribute("tabindex")) {
+          foersteH.setAttribute("tabindex", "-1");
+        }
+        foersteH.focus({ preventScroll: false });
+      }
+      SKAL_FLYTTE_FOKUS = false;
+    }
   }
 
   // Oppdater footer-metadata uansett
@@ -1278,7 +1329,10 @@ async function router() {
   }
 }
 
-window.addEventListener("popstate", router);
+window.addEventListener("popstate", () => {
+  SKAL_FLYTTE_FOKUS = true;
+  router();
+});
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", router);
