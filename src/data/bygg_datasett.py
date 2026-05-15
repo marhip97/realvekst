@@ -35,7 +35,6 @@ import pandas as pd
 from src.analyse.aggregering import (
     aggreger_per_departement,
     aggreger_per_programkategori,
-    aggreger_per_programomraade,
     realvekst_for_periode,
 )
 from src.analyse.brudd import marker_brudd_departement
