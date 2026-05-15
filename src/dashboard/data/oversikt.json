@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "basisaar": 2024,
-    "start": 2014,
+    "basisaar": 2026,
+    "start": 2022,
     "slutt": 2026,
-    "generert": "2026-05-13T18:53:54+00:00",
+    "generert": "2026-05-15T08:46:04+00:00",
     "kilde": "Statsregnskapet 2014-2026 og Finansdepartementets deflatorer",
     "post_typer": [
       "Overføringer til andre",
@@ -17,585 +17,78 @@
     {
       "id": 17,
       "navn": "Forsvarsdepartementet",
-      "nominell_start": 42355348000.0,
+      "nominell_start": 72078988000.0,
       "nominell_slutt": 177961399000.0,
-      "reell_start": 58504767707.41815,
-      "reell_slutt": 164535295296.33862,
-      "realvekst_pst": 181.2339946706194,
+      "reell_start": 85460451146.0614,
+      "reell_slutt": 177961399000.0,
+      "realvekst_pst": 108.23830978360296,
       "har_strukturelt_brudd": false,
       "brudd_beskrivelse": null,
       "tidsserie": [
         {
           "ar": 2014,
           "nominell": 42355348000.0,
-          "reell": 58504767707.41815
+          "reell": 63278756752.34345
         },
         {
           "ar": 2015,
           "nominell": 39669847000.0,
-          "reell": 53563370421.50929
+          "reell": 57934141447.904434
         },
         {
           "ar": 2016,
           "nominell": 44235538000.0,
-          "reell": 58271315083.28438
+          "reell": 63026254394.08036
         },
         {
           "ar": 2017,
           "nominell": 47790897000.0,
-          "reell": 61659918417.86866
+          "reell": 66691367760.76672
         },
         {
           "ar": 2018,
           "nominell": 51315765000.0,
-          "reell": 64404387856.36428
+          "reell": 69659785905.44359
         },
         {
           "ar": 2019,
           "nominell": 55532174000.0,
-          "reell": 67666248635.30877
+          "reell": 73187814523.94995
         },
         {
           "ar": 2020,
           "nominell": 57921787000.0,
-          "reell": 69466540111.69853
+          "reell": 75135009784.81311
         },
         {
           "ar": 2021,
           "nominell": 61265958000.0,
-          "reell": 70719209547.0588
+          "reell": 76489897046.0988
         },
         {
           "ar": 2022,
           "nominell": 72078988000.0,
-          "reell": 79012986015.6
+          "reell": 85460451146.0614
         },
         {
           "ar": 2023,
           "nominell": 78603298000.0,
-          "reell": 82061942628.0
+          "reell": 88758342163.64792
         },
         {
           "ar": 2024,
           "nominell": 102230208000.0,
-          "reell": 102230208000.0
+          "reell": 110572208844.06201
         },
         {
           "ar": 2025,
           "nominell": 165070125000.0,
-          "reell": 158721254881.1623
+          "reell": 171672932980.0
         },
         {
           "ar": 2026,
           "nominell": 177961399000.0,
-          "reell": 164535295296.33862
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer",
-        "Utlån, kapitaltilskudd, aksjer"
-      ]
-    },
-    {
-      "id": 14,
-      "navn": "Klima- og miljødepartementet",
-      "nominell_start": 8879848000.0,
-      "nominell_slutt": 27172415000.0,
-      "reell_start": 12266942500.51036,
-      "reell_slutt": 25118166496.548977,
-      "realvekst_pst": 104.76305726144837,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 8879848000.0,
-          "reell": 12266942500.51036
-        },
-        {
-          "ar": 2015,
-          "nominell": 8361755000.0,
-          "reell": 11292364576.300138
-        },
-        {
-          "ar": 2016,
-          "nominell": 8904263000.0,
-          "reell": 11735350462.496956
-        },
-        {
-          "ar": 2017,
-          "nominell": 10288131000.0,
-          "reell": 13282730536.064104
-        },
-        {
-          "ar": 2018,
-          "nominell": 12838024000.0,
-          "reell": 16118547918.61847
-        },
-        {
-          "ar": 2019,
-          "nominell": 8951177000.0,
-          "reell": 10911200656.873009
-        },
-        {
-          "ar": 2020,
-          "nominell": 9070776000.0,
-          "reell": 10885971553.7832
-        },
-        {
-          "ar": 2021,
-          "nominell": 14293197000.0,
-          "reell": 16503273902.464651
-        },
-        {
-          "ar": 2022,
-          "nominell": 17179606000.0,
-          "reell": 18831868646.850002
-        },
-        {
-          "ar": 2023,
-          "nominell": 18932410000.0,
-          "reell": 19768072590.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 23932264000.0,
-          "reell": 23932264000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 27126549000.0,
-          "reell": 26080614619.60914
-        },
-        {
-          "ar": 2026,
-          "nominell": 27172415000.0,
-          "reell": 25118166496.548977
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer"
-      ]
-    },
-    {
-      "id": 3,
-      "navn": "Kultur- og likestillingsdepartementet",
-      "nominell_start": 11916044000.0,
-      "nominell_slutt": 27367005000.0,
-      "reell_start": 16461388340.644213,
-      "reell_slutt": 25299632051.81331,
-      "realvekst_pst": 53.690755167636205,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 11916044000.0,
-          "reell": 16461388340.644213
-        },
-        {
-          "ar": 2015,
-          "nominell": 12645708000.0,
-          "reell": 17076894364.090342
-        },
-        {
-          "ar": 2016,
-          "nominell": 12984137000.0,
-          "reell": 17105710819.529684
-        },
-        {
-          "ar": 2017,
-          "nominell": 13722382000.0,
-          "reell": 17705856913.41778
-        },
-        {
-          "ar": 2018,
-          "nominell": 14352147000.0,
-          "reell": 18014024941.688652
-        },
-        {
-          "ar": 2019,
-          "nominell": 13027817000.0,
-          "reell": 15874758903.771778
-        },
-        {
-          "ar": 2020,
-          "nominell": 25667596000.0,
-          "reell": 30784026426.198242
-        },
-        {
-          "ar": 2021,
-          "nominell": 27249567000.0,
-          "reell": 31457406746.389053
-        },
-        {
-          "ar": 2022,
-          "nominell": 24390868000.0,
-          "reell": 26736426262.350002
-        },
-        {
-          "ar": 2023,
-          "nominell": 24659533000.0,
-          "reell": 25747700064.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 25437839000.0,
-          "reell": 25437839000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 26418816000.0,
-          "reell": 25400312129.89494
-        },
-        {
-          "ar": 2026,
-          "nominell": 27367005000.0,
-          "reell": 25299632051.81331
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer"
-      ]
-    },
-    {
-      "id": 11,
-      "navn": "Landbruks- og matdepartementet",
-      "nominell_start": 17366260000.0,
-      "nominell_slutt": 34948020000.0,
-      "reell_start": 23991596157.431606,
-      "reell_slutt": 32309548775.051846,
-      "realvekst_pst": 34.67027605432447,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 17366260000.0,
-          "reell": 23991596157.431606
-        },
-        {
-          "ar": 2015,
-          "nominell": 17173754000.0,
-          "reell": 23192157560.839027
-        },
-        {
-          "ar": 2016,
-          "nominell": 17674805000.0,
-          "reell": 23286449565.675034
-        },
-        {
-          "ar": 2017,
-          "nominell": 17777222000.0,
-          "reell": 22939175374.31762
-        },
-        {
-          "ar": 2018,
-          "nominell": 18921675000.0,
-          "reell": 23750262474.698185
-        },
-        {
-          "ar": 2019,
-          "nominell": 19407362000.0,
-          "reell": 23650434145.832172
-        },
-        {
-          "ar": 2020,
-          "nominell": 20258027000.0,
-          "reell": 24299292843.445168
-        },
-        {
-          "ar": 2021,
-          "nominell": 21152308000.0,
-          "reell": 24418574759.36655
-        },
-        {
-          "ar": 2022,
-          "nominell": 29605493000.0,
-          "reell": 32453352957.900005
-        },
-        {
-          "ar": 2023,
-          "nominell": 30438193000.0,
-          "reell": 31778604672.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 32785380000.0,
-          "reell": 32785380000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 34508405000.0,
-          "reell": 33179861492.542793
-        },
-        {
-          "ar": 2026,
-          "nominell": 34948020000.0,
-          "reell": 32309548775.051846
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer",
-        "Utlån, kapitaltilskudd, aksjer"
-      ]
-    },
-    {
-      "id": 7,
-      "navn": "Helse- og omsorgsdepartementet",
-      "nominell_start": 156378172000.0,
-      "nominell_slutt": 300953489000.0,
-      "reell_start": 216169546285.32962,
-      "reell_slutt": 278192110948.6191,
-      "realvekst_pst": 28.691629199898372,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 156378172000.0,
-          "reell": 216169546285.32962
-        },
-        {
-          "ar": 2015,
-          "nominell": 168646486000.0,
-          "reell": 227886733377.19363
-        },
-        {
-          "ar": 2016,
-          "nominell": 178479033000.0,
-          "reell": 235299730383.71332
-        },
-        {
-          "ar": 2017,
-          "nominell": 182111423000.0,
-          "reell": 235176810531.046
-        },
-        {
-          "ar": 2018,
-          "nominell": 196085674000.0,
-          "reell": 246280374638.04272
-        },
-        {
-          "ar": 2019,
-          "nominell": 209408094000.0,
-          "reell": 255332457695.26437
-        },
-        {
-          "ar": 2020,
-          "nominell": 228612665000.0,
-          "reell": 274438587110.19818
-        },
-        {
-          "ar": 2021,
-          "nominell": 255282992000.0,
-          "reell": 294880634591.2728
-        },
-        {
-          "ar": 2022,
-          "nominell": 255808170000.0,
-          "reell": 280404673802.4
-        },
-        {
-          "ar": 2023,
-          "nominell": 272027295000.0,
-          "reell": 284061750804.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 280908599000.0,
-          "reell": 280908599000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 288672987000.0,
-          "reell": 277510055459.73846
-        },
-        {
-          "ar": 2026,
-          "nominell": 300953489000.0,
-          "reell": 278192110948.6191
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer",
-        "Utlån, kapitaltilskudd, aksjer"
-      ]
-    },
-    {
-      "id": 4,
-      "navn": "Justis- og beredskapsdepartementet",
-      "nominell_start": 30240189000.0,
-      "nominell_slutt": 57376334000.0,
-      "reell_start": 41781906606.139694,
-      "reell_slutt": 53043695995.31527,
-      "realvekst_pst": 26.953746977933978,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 30240189000.0,
-          "reell": 41781906606.139694
-        },
-        {
-          "ar": 2015,
-          "nominell": 30654083000.0,
-          "reell": 41402564614.9125
-        },
-        {
-          "ar": 2016,
-          "nominell": 45243002000.0,
-          "reell": 59933982658.07612
-        },
-        {
-          "ar": 2017,
-          "nominell": 55561129000.0,
-          "reell": 72066135112.24489
-        },
-        {
-          "ar": 2018,
-          "nominell": 37648801000.0,
-          "reell": 47256353167.622635
-        },
-        {
-          "ar": 2019,
-          "nominell": 39256848000.0,
-          "reell": 47838312967.11578
-        },
-        {
-          "ar": 2020,
-          "nominell": 40784386000.0,
-          "reell": 48920410574.99799
-        },
-        {
-          "ar": 2021,
-          "nominell": 44470788000.0,
-          "reell": 51373153531.63035
-        },
-        {
-          "ar": 2022,
-          "nominell": 44809959000.0,
-          "reell": 49119247371.600006
-        },
-        {
-          "ar": 2023,
-          "nominell": 47710334000.0,
-          "reell": 49813071012.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 52193721000.0,
-          "reell": 52193721000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 56223977000.0,
-          "reell": 54058064631.54801
-        },
-        {
-          "ar": 2026,
-          "nominell": 57376334000.0,
-          "reell": 53043695995.31527
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer"
-      ]
-    },
-    {
-      "id": 6,
-      "navn": "Arbeids- og inkluderingsdepartementet",
-      "nominell_start": 389783201000.0,
-      "nominell_slutt": 736965721000.0,
-      "reell_start": 538407715250.702,
-      "reell_slutt": 681211875243.1915,
-      "realvekst_pst": 26.523423782290106,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 389783201000.0,
-          "reell": 538407715250.702
-        },
-        {
-          "ar": 2015,
-          "nominell": 382726849000.0,
-          "reell": 516773898064.023
-        },
-        {
-          "ar": 2016,
-          "nominell": 403366443000.0,
-          "reell": 531357760746.71765
-        },
-        {
-          "ar": 2017,
-          "nominell": 417294009000.0,
-          "reell": 538397043218.5025
-        },
-        {
-          "ar": 2018,
-          "nominell": 430051248000.0,
-          "reell": 539742980580.832
-        },
-        {
-          "ar": 2019,
-          "nominell": 452550382000.0,
-          "reell": 551437412308.4795
-        },
-        {
-          "ar": 2020,
-          "nominell": 505802618000.0,
-          "reell": 606621241034.802
-        },
-        {
-          "ar": 2021,
-          "nominell": 523146053000.0,
-          "reell": 603869088971.4504
-        },
-        {
-          "ar": 2022,
-          "nominell": 552483788000.0,
-          "reell": 605618019358.8
-        },
-        {
-          "ar": 2023,
-          "nominell": 604361950000.0,
-          "reell": 631087627842.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 656319657000.0,
-          "reell": 656319657000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 696574087000.0,
-          "reell": 669631670083.021
-        },
-        {
-          "ar": 2026,
-          "nominell": 736965721000.0,
-          "reell": 681211875243.1915
+          "reell": 177961399000.0
         }
       ],
       "post_typer": [
@@ -609,78 +102,755 @@
     {
       "id": 16,
       "navn": "Finansdepartementet",
-      "nominell_start": -922753965000.0,
+      "nominell_start": -799348019000.0,
       "nominell_slutt": -1690853656000.0,
-      "reell_start": -1274031955236.9714,
-      "reell_slutt": -1563526589031.6223,
-      "realvekst_pst": 22.72271371253043,
+      "reell_start": -947515389392.0586,
+      "reell_slutt": -1690853656000.0,
+      "realvekst_pst": 78.45131329052919,
       "har_strukturelt_brudd": false,
       "brudd_beskrivelse": null,
       "tidsserie": [
         {
           "ar": 2014,
           "nominell": -922753965000.0,
-          "reell": -1274031955236.9714
+          "reell": -1377769817506.0579
         },
         {
           "ar": 2015,
           "nominell": -980206894000.0,
-          "reell": -1322974649408.2004
+          "reell": -1430705730875.676
         },
         {
           "ar": 2016,
           "nominell": -1076742716000.0,
-          "reell": -1417857301450.6497
+          "reell": -1533318030203.6113
         },
         {
           "ar": 2017,
           "nominell": -1044693371000.0,
-          "reell": -1347404225935.3335
+          "reell": -1457110062570.1882
         },
         {
           "ar": 2018,
           "nominell": -1012711080000.0,
-          "reell": -1270614981002.9521
+          "reell": -1374041454875.209
         },
         {
           "ar": 2019,
           "nominell": -1044301000000.0,
-          "reell": -1272127046412.4407
+          "reell": -1375662261712.9133
         },
         {
           "ar": 2020,
           "nominell": -1248344391000.0,
-          "reell": -1496586363371.2295
+          "reell": -1618425405944.5247
         },
         {
           "ar": 2021,
           "nominell": -1181650747000.0,
-          "reell": -1363574056300.0542
+          "reell": -1474565553150.5059
         },
         {
           "ar": 2022,
           "nominell": -799348019000.0,
-          "reell": -876275748427.8
+          "reell": -947515389392.0586
         },
         {
           "ar": 2023,
           "nominell": -1126513342000.0,
-          "reell": -1175887329048.0
+          "reell": -1271559073563.317
         },
         {
           "ar": 2024,
           "nominell": -1310853807000.0,
-          "reell": -1310853807000.0
+          "reell": -1417538025051.2002
         },
         {
           "ar": 2025,
           "nominell": -1596764757000.0,
-          "reell": -1535560943886.3787
+          "reell": -1660602647280.0002
         },
         {
           "ar": 2026,
           "nominell": -1690853656000.0,
-          "reell": -1563526589031.6223
+          "reell": -1690853656000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
+      ]
+    },
+    {
+      "id": 14,
+      "navn": "Klima- og miljødepartementet",
+      "nominell_start": 17179606000.0,
+      "nominell_slutt": 27172415000.0,
+      "reell_start": 20372157340.06518,
+      "reell_slutt": 27172415000.0,
+      "realvekst_pst": 33.38015481826757,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 8879848000.0,
+          "reell": 13268469306.863607
+        },
+        {
+          "ar": 2015,
+          "nominell": 8361755000.0,
+          "reell": 12214701869.17414
+        },
+        {
+          "ar": 2016,
+          "nominell": 8904263000.0,
+          "reell": 12695531220.744982
+        },
+        {
+          "ar": 2017,
+          "nominell": 10288131000.0,
+          "reell": 14371308295.708725
+        },
+        {
+          "ar": 2018,
+          "nominell": 12838024000.0,
+          "reell": 17437703042.63207
+        },
+        {
+          "ar": 2019,
+          "nominell": 8951177000.0,
+          "reell": 11804673062.795689
+        },
+        {
+          "ar": 2020,
+          "nominell": 9070776000.0,
+          "reell": 11777834192.842096
+        },
+        {
+          "ar": 2021,
+          "nominell": 14293197000.0,
+          "reell": 17853125987.080532
+        },
+        {
+          "ar": 2022,
+          "nominell": 17179606000.0,
+          "reell": 20372157340.06518
+        },
+        {
+          "ar": 2023,
+          "nominell": 18932410000.0,
+          "reell": 21384989359.91775
+        },
+        {
+          "ar": 2024,
+          "nominell": 23932264000.0,
+          "reell": 25889151522.18
+        },
+        {
+          "ar": 2025,
+          "nominell": 27126549000.0,
+          "reell": 28212016268.000004
+        },
+        {
+          "ar": 2026,
+          "nominell": 27172415000.0,
+          "reell": 27172415000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
+      ]
+    },
+    {
+      "id": 8,
+      "navn": "Barne- og familiedepartementet",
+      "nominell_start": 56614656000.0,
+      "nominell_slutt": 79706767000.0,
+      "reell_start": 67118559556.55555,
+      "reell_slutt": 79706767000.0,
+      "realvekst_pst": 18.75518116987799,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 51533703000.0,
+          "reell": 77367441460.13759
+        },
+        {
+          "ar": 2015,
+          "nominell": 55182647000.0,
+          "reell": 81025630321.42134
+        },
+        {
+          "ar": 2016,
+          "nominell": 46270438000.0,
+          "reell": 65967015062.392685
+        },
+        {
+          "ar": 2017,
+          "nominell": 46639690000.0,
+          "reell": 65112273242.59508
+        },
+        {
+          "ar": 2018,
+          "nominell": 45676637000.0,
+          "reell": 62010970777.74259
+        },
+        {
+          "ar": 2019,
+          "nominell": 49976536000.0,
+          "reell": 65876980493.85296
+        },
+        {
+          "ar": 2020,
+          "nominell": 52492490000.0,
+          "reell": 68113545133.97263
+        },
+        {
+          "ar": 2021,
+          "nominell": 55616456000.0,
+          "reell": 69458254234.1189
+        },
+        {
+          "ar": 2022,
+          "nominell": 56614656000.0,
+          "reell": 67118559556.55555
+        },
+        {
+          "ar": 2023,
+          "nominell": 60517296000.0,
+          "reell": 68318062829.41051
+        },
+        {
+          "ar": 2024,
+          "nominell": 69054401000.0,
+          "reell": 74678179134.34401
+        },
+        {
+          "ar": 2025,
+          "nominell": 75248371000.0,
+          "reell": 78256948395.00002
+        },
+        {
+          "ar": 2026,
+          "nominell": 79706767000.0,
+          "reell": 79706767000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
+      ]
+    },
+    {
+      "id": 6,
+      "navn": "Arbeids- og inkluderingsdepartementet",
+      "nominell_start": 552483788000.0,
+      "nominell_slutt": 736965721000.0,
+      "reell_start": 655164198707.188,
+      "reell_slutt": 736965721000.0,
+      "realvekst_pst": 12.48565206313593,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 389783201000.0,
+          "reell": 582344360123.0709
+        },
+        {
+          "ar": 2015,
+          "nominell": 382726849000.0,
+          "reell": 558944795712.9042
+        },
+        {
+          "ar": 2016,
+          "nominell": 403366443000.0,
+          "reell": 574718596686.2505
+        },
+        {
+          "ar": 2017,
+          "nominell": 417294009000.0,
+          "reell": 582332034284.7474
+        },
+        {
+          "ar": 2018,
+          "nominell": 430051248000.0,
+          "reell": 583787714955.3981
+        },
+        {
+          "ar": 2019,
+          "nominell": 452550382000.0,
+          "reell": 596436489309.8236
+        },
+        {
+          "ar": 2020,
+          "nominell": 505802618000.0,
+          "reell": 656123477095.0485
+        },
+        {
+          "ar": 2021,
+          "nominell": 523146053000.0,
+          "reell": 653146401896.0717
+        },
+        {
+          "ar": 2022,
+          "nominell": 552483788000.0,
+          "reell": 655164198707.188
+        },
+        {
+          "ar": 2023,
+          "nominell": 604361950000.0,
+          "reell": 682779285093.3108
+        },
+        {
+          "ar": 2024,
+          "nominell": 656319657000.0,
+          "reell": 710095153243.5101
+        },
+        {
+          "ar": 2025,
+          "nominell": 696574087000.0,
+          "reell": 724460555647.0001
+        },
+        {
+          "ar": 2026,
+          "nominell": 736965721000.0,
+          "reell": 736965721000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
+      ]
+    },
+    {
+      "id": 13,
+      "navn": "Samferdselsdepartementet",
+      "nominell_start": 80016021000.0,
+      "nominell_slutt": 102716200000.0,
+      "reell_start": 94919984052.36783,
+      "reell_slutt": 102716200000.0,
+      "realvekst_pst": 8.213461080367397,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 67093623000.0,
+          "reell": 100337139750.46199
+        },
+        {
+          "ar": 2015,
+          "nominell": 91634866000.0,
+          "reell": 133926501176.56706
+        },
+        {
+          "ar": 2016,
+          "nominell": 87273589000.0,
+          "reell": 124459416798.98238
+        },
+        {
+          "ar": 2017,
+          "nominell": 61161876000.0,
+          "reell": 85465512619.69533
+        },
+        {
+          "ar": 2018,
+          "nominell": 65496953000.0,
+          "reell": 89040401729.5294
+        },
+        {
+          "ar": 2019,
+          "nominell": 69815717000.0,
+          "reell": 92138103447.57628
+        },
+        {
+          "ar": 2020,
+          "nominell": 83757920000.0,
+          "reell": 108841920248.91188
+        },
+        {
+          "ar": 2021,
+          "nominell": 86227276000.0,
+          "reell": 107815439953.18362
+        },
+        {
+          "ar": 2022,
+          "nominell": 80016021000.0,
+          "reell": 94919984052.36783
+        },
+        {
+          "ar": 2023,
+          "nominell": -16520620000.0,
+          "reell": -18546669439.351208
+        },
+        {
+          "ar": 2024,
+          "nominell": 90075188000.0,
+          "reell": 97491827983.82901
+        },
+        {
+          "ar": 2025,
+          "nominell": 105284957000.0,
+          "reell": 109504565529.0
+        },
+        {
+          "ar": 2026,
+          "nominell": 102716200000.0,
+          "reell": 102716200000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
+      ]
+    },
+    {
+      "id": 4,
+      "navn": "Justis- og beredskapsdepartementet",
+      "nominell_start": 44809959000.0,
+      "nominell_slutt": 57376334000.0,
+      "reell_start": 53139794851.6103,
+      "reell_slutt": 57376334000.0,
+      "realvekst_pst": 7.972441670540851,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 30240189000.0,
+          "reell": 45195993675.74548
+        },
+        {
+          "ar": 2015,
+          "nominell": 30654083000.0,
+          "reell": 44786315491.73945
+        },
+        {
+          "ar": 2016,
+          "nominell": 45243002000.0,
+          "reell": 64973711633.73152
+        },
+        {
+          "ar": 2017,
+          "nominell": 55561129000.0,
+          "reell": 78146868078.47127
+        },
+        {
+          "ar": 2018,
+          "nominell": 37648801000.0,
+          "reell": 51115570625.8241
+        },
+        {
+          "ar": 2019,
+          "nominell": 39256848000.0,
+          "reell": 51744655018.06203
+        },
+        {
+          "ar": 2020,
+          "nominell": 40784386000.0,
+          "reell": 52915780665.23387
+        },
+        {
+          "ar": 2021,
+          "nominell": 44470788000.0,
+          "reell": 55592961473.00408
+        },
+        {
+          "ar": 2022,
+          "nominell": 44809959000.0,
+          "reell": 53139794851.6103
+        },
+        {
+          "ar": 2023,
+          "nominell": 47710334000.0,
+          "reell": 53882892124.51231
+        },
+        {
+          "ar": 2024,
+          "nominell": 52193721000.0,
+          "reell": 56457299257.284004
+        },
+        {
+          "ar": 2025,
+          "nominell": 56223977000.0,
+          "reell": 58473473009.00001
+        },
+        {
+          "ar": 2026,
+          "nominell": 57376334000.0,
+          "reell": 57376334000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer"
+      ]
+    },
+    {
+      "id": 5,
+      "navn": "Kommunal- og distriktsdepartementet",
+      "nominell_start": 232368576000.0,
+      "nominell_slutt": 297345069000.0,
+      "reell_start": 277110890196.63776,
+      "reell_slutt": 297345069000.0,
+      "realvekst_pst": 7.301834579292095,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 176987971000.0,
+          "reell": 271351839993.81766
+        },
+        {
+          "ar": 2015,
+          "nominell": 182696388000.0,
+          "reell": 273511577819.5444
+        },
+        {
+          "ar": 2016,
+          "nominell": 184401521000.0,
+          "reell": 269163878297.02023
+        },
+        {
+          "ar": 2017,
+          "nominell": 190217550000.0,
+          "reell": 271245803510.14328
+        },
+        {
+          "ar": 2018,
+          "nominell": 193251424000.0,
+          "reell": 267319250800.9444
+        },
+        {
+          "ar": 2019,
+          "nominell": 203771848000.0,
+          "reell": 273125154106.8598
+        },
+        {
+          "ar": 2020,
+          "nominell": 230846711000.0,
+          "reell": 306272082705.2956
+        },
+        {
+          "ar": 2021,
+          "nominell": 230336762000.0,
+          "reell": 292841508065.3069
+        },
+        {
+          "ar": 2022,
+          "nominell": 232368576000.0,
+          "reell": 277110890196.63776
+        },
+        {
+          "ar": 2023,
+          "nominell": 279313466000.0,
+          "reell": 318877299546.1906
+        },
+        {
+          "ar": 2024,
+          "nominell": 258332597000.0,
+          "reell": 281465083426.73193
+        },
+        {
+          "ar": 2025,
+          "nominell": 280425789000.0,
+          "reell": 291910517570.99994
+        },
+        {
+          "ar": 2026,
+          "nominell": 297345069000.0,
+          "reell": 297345069000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
+      ]
+    },
+    {
+      "id": 11,
+      "navn": "Landbruks- og matdepartementet",
+      "nominell_start": 29605493000.0,
+      "nominell_slutt": 34948020000.0,
+      "reell_start": 35103183421.42073,
+      "reell_slutt": 34948020000.0,
+      "realvekst_pst": -0.4420209402604964,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 17366260000.0,
+          "reell": 25950865949.6127
+        },
+        {
+          "ar": 2015,
+          "nominell": 17173754000.0,
+          "reell": 25086185194.99459
+        },
+        {
+          "ar": 2016,
+          "nominell": 17674805000.0,
+          "reell": 25188175951.86754
+        },
+        {
+          "ar": 2017,
+          "nominell": 17777222000.0,
+          "reell": 24812569488.63735
+        },
+        {
+          "ar": 2018,
+          "nominell": 18921675000.0,
+          "reell": 25689833740.734035
+        },
+        {
+          "ar": 2019,
+          "nominell": 19407362000.0,
+          "reell": 25582161209.295845
+        },
+        {
+          "ar": 2020,
+          "nominell": 20258027000.0,
+          "reell": 26283844979.864655
+        },
+        {
+          "ar": 2021,
+          "nominell": 21152308000.0,
+          "reell": 26412837107.11854
+        },
+        {
+          "ar": 2022,
+          "nominell": 29605493000.0,
+          "reell": 35103183421.42073
+        },
+        {
+          "ar": 2023,
+          "nominell": 30438193000.0,
+          "reell": 34373387197.010704
+        },
+        {
+          "ar": 2024,
+          "nominell": 32785380000.0,
+          "reell": 35462302364.184
+        },
+        {
+          "ar": 2025,
+          "nominell": 34508405000.0,
+          "reell": 35888942979.0
+        },
+        {
+          "ar": 2026,
+          "nominell": 34948020000.0,
+          "reell": 34948020000.0
+        }
+      ],
+      "post_typer": [
+        "Overføringer til andre",
+        "Overføringer til kommuner og fylkeskommuner",
+        "Utgifter til drift",
+        "Utgifter til investeringer",
+        "Utlån, kapitaltilskudd, aksjer"
+      ]
+    },
+    {
+      "id": 7,
+      "navn": "Helse- og omsorgsdepartementet",
+      "nominell_start": 255808170000.0,
+      "nominell_slutt": 300953489000.0,
+      "reell_start": 303392019018.09314,
+      "reell_slutt": 300953489000.0,
+      "realvekst_pst": -0.8037554929708665,
+      "har_strukturelt_brudd": false,
+      "brudd_beskrivelse": null,
+      "tidsserie": [
+        {
+          "ar": 2014,
+          "nominell": 156378172000.0,
+          "reell": 233876266316.6857
+        },
+        {
+          "ar": 2015,
+          "nominell": 168646486000.0,
+          "reell": 246556449671.94177
+        },
+        {
+          "ar": 2016,
+          "nominell": 178479033000.0,
+          "reell": 254584600137.851
+        },
+        {
+          "ar": 2017,
+          "nominell": 182111423000.0,
+          "reell": 254480823903.09613
+        },
+        {
+          "ar": 2018,
+          "nominell": 196085674000.0,
+          "reell": 266492949434.54254
+        },
+        {
+          "ar": 2019,
+          "nominell": 209408094000.0,
+          "reell": 276293696460.93933
+        },
+        {
+          "ar": 2020,
+          "nominell": 228612665000.0,
+          "reell": 296960694775.8218
+        },
+        {
+          "ar": 2021,
+          "nominell": 255282992000.0,
+          "reell": 319085044522.6696
+        },
+        {
+          "ar": 2022,
+          "nominell": 255808170000.0,
+          "reell": 303392019018.09314
+        },
+        {
+          "ar": 2023,
+          "nominell": 272027295000.0,
+          "reell": 307336280630.5098
+        },
+        {
+          "ar": 2024,
+          "nominell": 280908599000.0,
+          "reell": 303913066196.752
+        },
+        {
+          "ar": 2025,
+          "nominell": 288672987000.0,
+          "reell": 300229259080.0
+        },
+        {
+          "ar": 2026,
+          "nominell": 300953489000.0,
+          "reell": 300953489000.0
         }
       ],
       "post_typer": [
@@ -694,78 +864,78 @@
     {
       "id": 2,
       "navn": "Kunnskapsdepartementet",
-      "nominell_start": 64340707000.0,
+      "nominell_start": 100387565000.0,
       "nominell_slutt": 114378789000.0,
-      "reell_start": 88937449055.99414,
-      "reell_slutt": 105712762442.80104,
-      "realvekst_pst": 18.861923256023825,
+      "reell_start": 119051240524.087,
+      "reell_slutt": 114378789000.0,
+      "realvekst_pst": -3.9247398880666458,
       "har_strukturelt_brudd": false,
       "brudd_beskrivelse": null,
       "tidsserie": [
         {
           "ar": 2014,
           "nominell": 64340707000.0,
-          "reell": 88937449055.99414
+          "reell": 96220815396.36728
         },
         {
           "ar": 2015,
           "nominell": 62634317000.0,
-          "reell": 84635408837.39331
+          "reell": 91569035873.9036
         },
         {
           "ar": 2016,
           "nominell": 72860415000.0,
-          "reell": 96059738110.19327
+          "reell": 103934198870.19148
         },
         {
           "ar": 2017,
           "nominell": 77275923000.0,
-          "reell": 99770132602.78418
+          "reell": 107947390319.97835
         },
         {
           "ar": 2018,
           "nominell": 98823747000.0,
-          "reell": 124370545613.09299
+          "reell": 134737758883.67967
         },
         {
           "ar": 2019,
           "nominell": 99641018000.0,
-          "reell": 121648351083.45288
+          "reell": 131751880538.64186
         },
         {
           "ar": 2020,
           "nominell": 103498952000.0,
-          "reell": 124402345257.68192
+          "reell": 134688719753.75931
         },
         {
           "ar": 2021,
           "nominell": 108786994000.0,
-          "reell": 125748130818.3744
+          "reell": 136129182961.269
         },
         {
           "ar": 2022,
           "nominell": 100387565000.0,
-          "reell": 110041332970.80002
+          "reell": 119051240524.087
         },
         {
           "ar": 2023,
           "nominell": 101330065000.0,
-          "reell": 105812439618.0
+          "reell": 114481492068.88036
         },
         {
           "ar": 2024,
           "nominell": 106600597000.0,
-          "reell": 106600597000.0
+          "reell": 115334198600.38
         },
         {
           "ar": 2025,
           "nominell": 110210032000.0,
-          "reell": 105938375541.84116
+          "reell": 114623536872.0
         },
         {
           "ar": 2026,
           "nominell": 114378789000.0,
-          "reell": 105712762442.80104
+          "reell": 114378789000.0
         }
       ],
       "post_typer": [
@@ -777,249 +947,80 @@
       ]
     },
     {
-      "id": 5,
-      "navn": "Kommunal- og distriktsdepartementet",
-      "nominell_start": 176987971000.0,
-      "nominell_slutt": 297345069000.0,
-      "reell_start": 249139479242.5375,
-      "reell_slutt": 272927949114.0518,
-      "realvekst_pst": 9.548253831082382,
+      "id": 3,
+      "navn": "Kultur- og likestillingsdepartementet",
+      "nominell_start": 24390868000.0,
+      "nominell_slutt": 27367005000.0,
+      "reell_start": 28925442229.681606,
+      "reell_slutt": 27367005000.0,
+      "realvekst_pst": -5.387773218147824,
       "har_strukturelt_brudd": false,
       "brudd_beskrivelse": null,
       "tidsserie": [
         {
           "ar": 2014,
-          "nominell": 176987971000.0,
-          "reell": 249139479242.5375
+          "nominell": 11916044000.0,
+          "reell": 17805422513.395798
         },
         {
           "ar": 2015,
-          "nominell": 182696388000.0,
-          "reell": 251135723923.50488
+          "nominell": 12645708000.0,
+          "reell": 18471339355.48674
         },
         {
           "ar": 2016,
-          "nominell": 184401521000.0,
-          "reell": 247125622310.16782
+          "nominell": 12984137000.0,
+          "reell": 18502316249.152294
         },
         {
           "ar": 2017,
-          "nominell": 190217550000.0,
-          "reell": 249029008171.92178
+          "nominell": 13722382000.0,
+          "reell": 19151290390.252728
         },
         {
           "ar": 2018,
-          "nominell": 193251424000.0,
-          "reell": 245435729341.95273
+          "nominell": 14352147000.0,
+          "reell": 19484747207.481907
         },
         {
           "ar": 2019,
-          "nominell": 203771848000.0,
-          "reell": 250787121086.39154
+          "nominell": 13027817000.0,
+          "reell": 17170361052.083052
         },
         {
           "ar": 2020,
-          "nominell": 230846711000.0,
-          "reell": 281192113669.0406
+          "nominell": 25667596000.0,
+          "reell": 33296230328.50008
         },
         {
           "ar": 2021,
-          "nominell": 230336762000.0,
-          "reell": 268861448461.31863
+          "nominell": 27249567000.0,
+          "reell": 34026567482.793953
         },
         {
           "ar": 2022,
-          "nominell": 232368576000.0,
-          "reell": 254511593940.44995
+          "nominell": 24390868000.0,
+          "reell": 28925442229.681606
         },
         {
           "ar": 2023,
-          "nominell": 279313466000.0,
-          "reell": 292973662194.0
+          "nominell": 24659533000.0,
+          "reell": 27853299168.119102
         },
         {
           "ar": 2024,
-          "nominell": 258332597000.0,
-          "reell": 258332597000.0
+          "nominell": 25437839000.0,
+          "reell": 27515936942.95
         },
         {
           "ar": 2025,
-          "nominell": 280425789000.0,
-          "reell": 267919258325.98636
+          "nominell": 26418816000.0,
+          "reell": 27475941280.000004
         },
         {
           "ar": 2026,
-          "nominell": 297345069000.0,
-          "reell": 272927949114.0518
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
-        "Utgifter til drift",
-        "Utgifter til investeringer",
-        "Utlån, kapitaltilskudd, aksjer"
-      ]
-    },
-    {
-      "id": 1,
-      "navn": "Utenriksdepartementet",
-      "nominell_start": 36719623000.0,
-      "nominell_slutt": 59546269000.0,
-      "reell_start": 50720230510.65402,
-      "reell_slutt": 55053872965.97633,
-      "realvekst_pst": 8.544208911692564,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 36719623000.0,
-          "reell": 50720230510.65402
-        },
-        {
-          "ar": 2015,
-          "nominell": 40138763000.0,
-          "reell": 54196514315.52462
-        },
-        {
-          "ar": 2016,
-          "nominell": 42166403000.0,
-          "reell": 55545650990.878586
-        },
-        {
-          "ar": 2017,
-          "nominell": 37944669000.0,
-          "reell": 48956293809.112434
-        },
-        {
-          "ar": 2018,
-          "nominell": 38022706000.0,
-          "reell": 47720795053.38193
-        },
-        {
-          "ar": 2019,
-          "nominell": 41371374000.0,
-          "reell": 50411238707.642685
-        },
-        {
-          "ar": 2020,
-          "nominell": 44844091000.0,
-          "reell": 53782246846.495926
-        },
-        {
-          "ar": 2021,
-          "nominell": 45440189000.0,
-          "reell": 52451546546.4354
-        },
-        {
-          "ar": 2022,
-          "nominell": 56933275000.0,
-          "reell": 62410256055.0
-        },
-        {
-          "ar": 2023,
-          "nominell": 68199282000.0,
-          "reell": 71200050408.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 60769552000.0,
-          "reell": 60769552000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 61975757000.0,
-          "reell": 59592074038.46154
-        },
-        {
-          "ar": 2026,
-          "nominell": 59546269000.0,
-          "reell": 55053872965.97633
-        }
-      ],
-      "post_typer": [
-        "Overføringer til andre",
-        "Utgifter til drift",
-        "Utgifter til investeringer",
-        "Utlån, kapitaltilskudd, aksjer"
-      ]
-    },
-    {
-      "id": 8,
-      "navn": "Barne- og familiedepartementet",
-      "nominell_start": 51533703000.0,
-      "nominell_slutt": 79706767000.0,
-      "reell_start": 71436081087.51547,
-      "reell_slutt": 73698476900.70772,
-      "realvekst_pst": 3.167021172984856,
-      "har_strukturelt_brudd": false,
-      "brudd_beskrivelse": null,
-      "tidsserie": [
-        {
-          "ar": 2014,
-          "nominell": 51533703000.0,
-          "reell": 71436081087.51547
-        },
-        {
-          "ar": 2015,
-          "nominell": 55182647000.0,
-          "reell": 74799330407.61153
-        },
-        {
-          "ar": 2016,
-          "nominell": 46270438000.0,
-          "reell": 60979050466.62511
-        },
-        {
-          "ar": 2017,
-          "nominell": 46639690000.0,
-          "reell": 60191677706.68442
-        },
-        {
-          "ar": 2018,
-          "nominell": 45676637000.0,
-          "reell": 57330511206.23685
-        },
-        {
-          "ar": 2019,
-          "nominell": 49976536000.0,
-          "reell": 60902746720.289
-        },
-        {
-          "ar": 2020,
-          "nominell": 52492490000.0,
-          "reell": 62968635510.19171
-        },
-        {
-          "ar": 2021,
-          "nominell": 55616456000.0,
-          "reell": 64210288225.01266
-        },
-        {
-          "ar": 2022,
-          "nominell": 56614656000.0,
-          "reell": 62061854301.30001
-        },
-        {
-          "ar": 2023,
-          "nominell": 60517296000.0,
-          "reell": 63173169252.0
-        },
-        {
-          "ar": 2024,
-          "nominell": 69054401000.0,
-          "reell": 69054401000.0
-        },
-        {
-          "ar": 2025,
-          "nominell": 75248371000.0,
-          "reell": 72362929387.995
-        },
-        {
-          "ar": 2026,
-          "nominell": 79706767000.0,
-          "reell": 73698476900.70772
+          "nominell": 27367005000.0,
+          "reell": 27367005000.0
         }
       ],
       "post_typer": [
@@ -1030,85 +1031,84 @@
       ]
     },
     {
-      "id": 13,
-      "navn": "Samferdselsdepartementet",
-      "nominell_start": 67093623000.0,
-      "nominell_slutt": 102716200000.0,
-      "reell_start": 92742349445.83871,
-      "reell_slutt": 94905626025.32178,
-      "realvekst_pst": 2.332566074085076,
+      "id": 1,
+      "navn": "Utenriksdepartementet",
+      "nominell_start": 56933275000.0,
+      "nominell_slutt": 59546269000.0,
+      "reell_start": 67502932949.088005,
+      "reell_slutt": 59546269000.0,
+      "realvekst_pst": -11.787138130855844,
       "har_strukturelt_brudd": false,
       "brudd_beskrivelse": null,
       "tidsserie": [
         {
           "ar": 2014,
-          "nominell": 67093623000.0,
-          "reell": 92742349445.83871
+          "nominell": 36719623000.0,
+          "reell": 54859001320.32337
         },
         {
           "ar": 2015,
-          "nominell": 91634866000.0,
-          "reell": 123796007183.7338
+          "nominell": 40138763000.0,
+          "reell": 58618949883.67142
         },
         {
           "ar": 2016,
-          "nominell": 87273589000.0,
-          "reell": 115039282038.17558
+          "nominell": 42166403000.0,
+          "reell": 60078176111.73426
         },
         {
           "ar": 2017,
-          "nominell": 61161876000.0,
-          "reell": 78982863234.64264
+          "nominell": 37944669000.0,
+          "reell": 52951127383.93599
         },
         {
           "ar": 2018,
-          "nominell": 65496953000.0,
-          "reell": 82278102605.53104
+          "nominell": 38022706000.0,
+          "reell": 51614811929.73788
         },
         {
           "ar": 2019,
-          "nominell": 69815717000.0,
-          "reell": 85139248348.36221
+          "nominell": 41371374000.0,
+          "reell": 54524795786.18632
         },
         {
           "ar": 2020,
-          "nominell": 83757920000.0,
-          "reell": 100574702133.44533
+          "nominell": 44844091000.0,
+          "reell": 58170878189.16999
         },
         {
           "ar": 2021,
-          "nominell": 86227276000.0,
-          "reell": 99623554657.45515
+          "nominell": 45440189000.0,
+          "reell": 56731592744.62453
         },
         {
           "ar": 2022,
-          "nominell": 80016021000.0,
-          "reell": 87707118423.75002
+          "nominell": 56933275000.0,
+          "reell": 67502932949.088005
         },
         {
           "ar": 2023,
-          "nominell": -16520620000.0,
-          "reell": -17204887056.0
+          "nominell": 68199282000.0,
+          "reell": 77009974521.2928
         },
         {
           "ar": 2024,
-          "nominell": 90075188000.0,
-          "reell": 90075188000.0
+          "nominell": 60769552000.0,
+          "reell": 65728347443.200005
         },
         {
           "ar": 2025,
-          "nominell": 105284957000.0,
-          "reell": 101182754973.91815
+          "nominell": 61975757000.0,
+          "reell": 64454787280.0
         },
         {
           "ar": 2026,
-          "nominell": 102716200000.0,
-          "reell": 94905626025.32178
+          "nominell": 59546269000.0,
+          "reell": 59546269000.0
         }
       ],
       "post_typer": [
         "Overføringer til andre",
-        "Overføringer til kommuner og fylkeskommuner",
         "Utgifter til drift",
         "Utgifter til investeringer",
         "Utlån, kapitaltilskudd, aksjer"
@@ -1117,78 +1117,78 @@
     {
       "id": 18,
       "navn": "Energidepartementet",
-      "nominell_start": -118723243000.0,
+      "nominell_start": 39192009000.0,
       "nominell_slutt": 20283245000.0,
-      "reell_start": -163989740929.94434,
-      "reell_slutt": 18742156730.611927,
-      "realvekst_pst": -111.42885928371489,
+      "reell_start": 46468846756.47912,
+      "reell_slutt": 20283245000.0,
+      "realvekst_pst": -56.350875014620584,
       "har_strukturelt_brudd": true,
-      "brudd_beskrivelse": "Energidepartementet er en omorganisering. Tidsserien viser negativ realvekst fordi det historiske området ikke er sammenlignbart. Bruk filtreringsfunksjonen for tverrgående analyser.",
+      "brudd_beskrivelse": "Energidepartementet ble etablert 1. januar 2024 ved utskilling fra Olje- og energidepartementet. Tidsserien inneholder dessuten netto kapitaltilskudd/utlån (post 90-serien) som gir store negative summer. Realvekst-tallet er ikke direkte sammenlignbart med øvrige departementer. Bruk drilldown på programområde- og post-nivå for konsistente sammenligninger.",
       "tidsserie": [
         {
           "ar": 2014,
           "nominell": -118723243000.0,
-          "reell": -163989740929.94434
+          "reell": -177370987651.69086
         },
         {
           "ar": 2015,
           "nominell": -101267114000.0,
-          "reell": -136732666945.88898
+          "reell": -147889584004.87836
         },
         {
           "ar": 2016,
           "nominell": -56216552000.0,
-          "reell": -74052151261.87683
+          "reell": -80094046661.15385
         },
         {
           "ar": 2017,
           "nominell": -91985099000.0,
-          "reell": -118677139521.41605
+          "reell": -128360020922.73674
         },
         {
           "ar": 2018,
           "nominell": -207286300000.0,
-          "reell": -260154717913.43472
+          "reell": -281381981763.1772
         },
         {
           "ar": 2019,
           "nominell": -111610363000.0,
-          "reell": -135996327258.22394
+          "reell": -147092504664.20245
         },
         {
           "ar": 2020,
           "nominell": -78906057000.0,
-          "reell": -94630563966.435
+          "reell": -102351062443.64265
         },
         {
           "ar": 2021,
           "nominell": -175578823000.0,
-          "reell": -202668333842.29636
+          "reell": -219204663844.57822
         },
         {
           "ar": 2022,
           "nominell": 39192009000.0,
-          "reell": 42962169208.350006
+          "reell": 46468846756.47912
         },
         {
           "ar": 2023,
           "nominell": 22402163000.0,
-          "reell": 23389021044.0
+          "reell": 25299259727.3406
         },
         {
           "ar": 2024,
           "nominell": 12129684000.0,
-          "reell": 12129684000.0
+          "reell": 13127910874.910002
         },
         {
           "ar": 2025,
           "nominell": 13733267000.0,
-          "reell": 13196314249.504078
+          "reell": 14283958807.0
         },
         {
           "ar": 2026,
           "nominell": 20283245000.0,
-          "reell": 18742156730.611927
+          "reell": 20283245000.0
         }
       ],
       "post_typer": [
@@ -1202,78 +1202,78 @@
     {
       "id": 9,
       "navn": "Nærings- og fiskeridepartementet",
-      "nominell_start": 2129761000.0,
+      "nominell_start": -631816949000.0,
       "nominell_slutt": -218990601000.0,
-      "reell_start": 2946481319.84897,
-      "reell_slutt": -202481450779.85037,
-      "realvekst_pst": -6971.9746979502015,
+      "reell_start": -749088489195.8881,
+      "reell_slutt": -218990601000.0,
+      "realvekst_pst": -70.76572338802372,
       "har_strukturelt_brudd": true,
-      "brudd_beskrivelse": "Strukturelt brudd: omorganisering med endret virkeområde gjør at tidsserien gir et meningsløst negativt realvekst-tall. Tallet skal ikke tolkes som faktisk nedgang.",
+      "brudd_beskrivelse": "Departementet aggregerer netto kapitaltilskudd/utlån (post 90-serien) som gir store negative summer i flere år. Realvekst-tallet på departementsnivå er derfor ikke meningsfullt. Drill ned til programområde- eller post-nivå for å se reelle bevegelser.",
       "tidsserie": [
         {
           "ar": 2014,
           "nominell": 2129761000.0,
-          "reell": 2946481319.84897
+          "reell": 3188799820.1278152
         },
         {
           "ar": 2015,
           "nominell": 1674649000.0,
-          "reell": 2274063115.446993
+          "reell": 2465082714.5267925
         },
         {
           "ar": 2016,
           "nominell": -329857000.0,
-          "reell": -423212256.46922505
+          "reell": -452721379.64897996
         },
         {
           "ar": 2017,
           "nominell": -7549302000.0,
-          "reell": -9733204748.677044
+          "reell": -10523799164.146091
         },
         {
           "ar": 2018,
           "nominell": -21776306000.0,
-          "reell": -27284860474.527252
+          "reell": -29481979010.73286
         },
         {
           "ar": 2019,
           "nominell": -18861498000.0,
-          "reell": -22975416357.675816
+          "reell": -24844627380.319614
         },
         {
           "ar": 2020,
           "nominell": 6165924000.0,
-          "reell": 7441861830.191508
+          "reell": 8072252651.493508
         },
         {
           "ar": 2021,
           "nominell": 2843940000.0,
-          "reell": 3297286941.8727036
+          "reell": 3576284151.395863
         },
         {
           "ar": 2022,
           "nominell": -631816949000.0,
-          "reell": -692601057172.5001
+          "reell": -749088489195.8881
         },
         {
           "ar": 2023,
           "nominell": -429020805000.0,
-          "reell": -447889004562.0
+          "reell": -484424046368.08527
         },
         {
           "ar": 2024,
           "nominell": -354773651000.0,
-          "reell": -354773651000.0
+          "reell": -383683365670.8721
         },
         {
           "ar": 2025,
           "nominell": -334603509000.0,
-          "reell": -321744079562.48627
+          "reell": -347986103727.0
         },
         {
           "ar": 2026,
           "nominell": -218990601000.0,
-          "reell": -202481450779.85037
+          "reell": -218990601000.0
         }
       ],
       "post_typer": [
@@ -1290,25 +1290,25 @@
       "nominell_start": null,
       "nominell_slutt": 10296637000.0,
       "reell_start": null,
-      "reell_slutt": 9518695826.342575,
+      "reell_slutt": 10296637000.0,
       "realvekst_pst": null,
       "har_strukturelt_brudd": true,
-      "brudd_beskrivelse": "Departementet eksisterte ikke i 2014. Realvekst over hele perioden er udefinert og må markeres som strukturelt brudd.",
+      "brudd_beskrivelse": "Departementet ble etablert 1. januar 2024 ved utskilling fra Kommunal- og distriktsdepartementet. Realvekst over en periode som krysser etableringsåret er ikke definert. Velg en periode fra 2024 og framover, eller drill ned til underliggende poster.",
       "tidsserie": [
         {
           "ar": 2024,
           "nominell": 36032866000.0,
-          "reell": 36032866000.0
+          "reell": 38976562193.737
         },
         {
           "ar": 2025,
           "nominell": 12717025000.0,
-          "reell": 12225236712.034384
+          "reell": 13226121632.0
         },
         {
           "ar": 2026,
           "nominell": 10296637000.0,
-          "reell": 9518695826.342575
+          "reell": 10296637000.0
         }
       ],
       "post_typer": [

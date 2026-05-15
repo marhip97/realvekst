@@ -46,8 +46,8 @@ from src.data.bevilgning import last_bevilgning
 PROSJEKT_ROT = Path(__file__).resolve().parents[2]
 DASHBOARD_DATA = PROSJEKT_ROT / "src" / "dashboard" / "data"
 
-DEFAULT_BASISAAR = 2024
-DEFAULT_START = 2014
+DEFAULT_BASISAAR = 2026
+DEFAULT_START = 2022
 DEFAULT_SLUTT = 2026
 
 
