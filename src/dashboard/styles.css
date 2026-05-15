@@ -454,6 +454,26 @@ code {
   flex: 1 1 16rem;
 }
 
+.filter-felt--terskel {
+  flex: 0 1 9rem;
+}
+
+#filter-terskel {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: var(--avstand-xs) var(--avstand-s);
+  border: 1px solid var(--farge-kant);
+  border-radius: var(--radius-s);
+  background: var(--farge-overflate);
+  color: var(--farge-tekst);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#filter-terskel:focus {
+  border-color: var(--farge-kant-fokus);
+}
+
 .filter-periode {
   display: flex;
   align-items: end;

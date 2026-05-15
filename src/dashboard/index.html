@@ -65,6 +65,21 @@
             </label>
           </div>
         </fieldset>
+        <label class="filter-felt filter-felt--terskel">
+          <span class="filter-felt__etikett">Realvekst-terskel</span>
+          <input
+            type="number"
+            id="filter-terskel"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            placeholder="f.eks. 50"
+            aria-describedby="filter-terskel-hjelp"
+          />
+          <span id="filter-terskel-hjelp" class="filter-felt__hjelp">
+            Vis kun |realvekst| ≥ X&nbsp;%
+          </span>
+        </label>
         <button type="button" class="filter-nullstill" id="filter-nullstill" hidden>
           Nullstill filter
         </button>

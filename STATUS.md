@@ -1,6 +1,6 @@
 # Status — realvekst-statsbudsjett
 
-Sist oppdatert: 2026-05-13
+Sist oppdatert: 2026-05-15
 
 ## Hva er ferdig
 
@@ -18,6 +18,12 @@ Sist oppdatert: 2026-05-13
 - Frontend (PR #9): drilldown nivå 0-3 i src/dashboard/index.html, styles.css, dashboard.js
 - GitHub Pages-deploy stabilisert (PR #10): workflow trigges ved alle push til main + debug-log av opplastede filer
 - Plotly-script lastes nå riktig (PR #11): feilaktig SRI-hash fjernet
+- Filter-system (PR #13): tekstsøk og post-type-multivalg på alle drilldown-nivåer, med URL-state
+- Cache-busting (PR #14): CSS/JS får query-suffix i Pages-deploy
+- Bruddmarkering i UI (PR #15): badge i brødsmulesti, toppliste, tabell og inline-advarsel
+- Periode-valg (PR #16): brukeren kan velge fra-år og til-år for sammenligningen
+- Realvekst-terskel-filter: vis kun elementer der |realvekst| ≥ valgt grense
+- WCAG-revisjon: prefers-reduced-motion respekteres i Plotly, alle tabeller har caption, fokus flyttes til ny overskrift etter drilldown, og tastatur-alternativet via tabellene er beskrevet i klikk-instruksjoner
 - Dashbord live og verifisert fungerende av bruker
 
 ## Hva er under arbeid
@@ -30,11 +36,16 @@ Sist oppdatert: 2026-05-13
 
 ## Neste konkrete steg
 
-1. Legge tilbake verifisert SRI-hash på Plotly-script (hentes fra cdn.plot.ly og legges inn i index.html)
-2. Filter-funksjonalitet (post-type multivalg, tekstsøk, realvekst-terskel, periode/basisår)
-3. URL-tilstand for navigasjons- og filtervalg
-4. Bruddmarkering i UI for departementer/programområder/poster med strukturelle brudd
-5. WCAG-revisjon: skip-link, ARIA, fokusindikatorer, prefers-reduced-motion, tabellalternativ for grafer
+1. Eksport av visning til Excel/CSV og PNG (Plotly har innebygd toImage; CSV bygges fra eksisterende tidsserier)
+2. Lighthouse Accessibility-audit kjørt manuelt i Chrome for å verifisere WCAG ≥ 95
+3. Manuell skjermleser-test (VoiceOver / NVDA) for å verifisere at filter-status og drilldown-fokus oppleves naturlig
+4. Eventuell videre polering: tab-rekkefølge gjennom hele dashbordet, kontrast-sjekk av --advarsel-700 mot oransje stolpe-bakgrunn
+
+## Bevisst utelatt fra første versjon
+
+- SRI-hash på Plotly-script: CDN-en publiserer ikke en stabil hash; å hardkode en hash vil bryte ved CDN-oppdatering.
+- Regnskapsdata: utsatt til Fase 2 (kun bevilgning i første versjon).
+- Eksport til PNG/Excel: planlagt, ikke implementert.
 
 ## Validerte referansetall (fra prototypen)
 

@@ -94,6 +94,8 @@ function escapeHtml(s) {
 function lesUrlTilstand() {
   const u = new URL(window.location.href);
   const ptRaw = u.searchParams.get("pt");
+  const trRaw = u.searchParams.get("tr");
+  const trNum = trRaw !== null ? Number(trRaw) : null;
   return {
     dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
     po: u.searchParams.get("po")
@@ -106,6 +108,7 @@ function lesUrlTilstand() {
     pt: ptRaw ? ptRaw.split(",").filter(Boolean) : [],
     fra: u.searchParams.get("fra") ? parseInt(u.searchParams.get("fra"), 10) : null,
     til: u.searchParams.get("til") ? parseInt(u.searchParams.get("til"), 10) : null,
+    tr: trNum !== null && Number.isFinite(trNum) && trNum >= 0 ? trNum : null,
   };
 }
 
@@ -117,6 +120,7 @@ function lagUrl({
   pt = [],
   fra = null,
   til = null,
+  tr = null,
 } = {}) {
   const params = new URLSearchParams();
   if (dep !== null) params.set("dep", dep);
@@ -126,6 +130,7 @@ function lagUrl({
   if (pt && pt.length > 0) params.set("pt", pt.join(","));
   if (fra !== null) params.set("fra", fra);
   if (til !== null) params.set("til", til);
+  if (tr !== null) params.set("tr", tr);
   const sok = params.toString();
   return sok ? `?${sok}` : window.location.pathname;
 }
@@ -153,15 +158,27 @@ function realvekstFraTidsserie(tidsserie, fraAr, tilAr) {
   };
 }
 
+// Flagg som settes naar router skal flytte fokus til ny seksjon
+// (drilldown eller popstate), men ikke ved rene filter-oppdateringer.
+let SKAL_FLYTTE_FOKUS = false;
+
 function naviger(state) {
   const naa = lesUrlTilstand();
-  const samlet = { q: naa.q, pt: naa.pt, fra: naa.fra, til: naa.til, ...state };
+  const samlet = {
+    q: naa.q,
+    pt: naa.pt,
+    fra: naa.fra,
+    til: naa.til,
+    tr: naa.tr,
+    ...state,
+  };
   const url = lagUrl(samlet);
   window.history.pushState(samlet, "", url);
+  SKAL_FLYTTE_FOKUS = true;
   router();
 }
 
-function settFilterStateOgRender({ q, pt, fra, til } = {}) {
+function settFilterStateOgRender({ q, pt, fra, til, tr } = {}) {
   // Bevarer drilldown-nivaa, oppdaterer kun filter-delene av URL.
   const naa = lesUrlTilstand();
   const ny = {
@@ -172,6 +189,7 @@ function settFilterStateOgRender({ q, pt, fra, til } = {}) {
     pt: pt !== undefined ? pt : naa.pt,
     fra: fra !== undefined ? fra : naa.fra,
     til: til !== undefined ? til : naa.til,
+    tr: tr !== undefined ? tr : naa.tr,
   };
   const url = lagUrl(ny);
   window.history.replaceState(ny, "", url);
@@ -224,6 +242,47 @@ function departementMatcher(dep, q, postTyper) {
   }
   if (!q) return true;
   return _matcherTekst(dep.navn, q) || _matcherTekst(String(dep.id), q);
+}
+
+function terskelMatcher(element, terskel) {
+  // Tar et element med beregnet realvekst_pst. Returnerer true hvis
+  // terskel ikke er satt eller hvis |realvekst| >= terskel. Elementer
+  // uten beregnet realvekst (null) faller ut naar terskel er satt.
+  if (terskel === null || terskel === undefined || !Number.isFinite(terskel)) {
+    return true;
+  }
+  if (element.realvekst_pst === null || element.realvekst_pst === undefined) {
+    return false;
+  }
+  return Math.abs(element.realvekst_pst) >= terskel;
+}
+
+// --- Tilgjengelighetshjelpere ---
+
+function foretrekkerReduserteAnimasjoner() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function plotlyConfig() {
+  return {
+    displayModeBar: false,
+    responsive: true,
+    locale: "nb",
+    // Slaar av Plotly-overgangsanimasjoner naar bruker har satt
+    // prefers-reduced-motion: reduce. Animasjon styres ogsaa av
+    // layout.transition i nyere Plotly, men config-flagget gir
+    // robusthet paa tvers av versjoner.
+  };
+}
+
+function plotlyLayoutTransisjon() {
+  return foretrekkerReduserteAnimasjoner()
+    ? { duration: 0 }
+    : { duration: 250, easing: "cubic-in-out" };
 }
 
 // --- Cache for departement-filer ---
@@ -310,10 +369,10 @@ function rendrerTidsserie(elementId, tidsserie, opts = {}) {
       x: 0,
     },
     hovermode: "x unified",
+    transition: plotlyLayoutTransisjon(),
   };
 
-  const config = { displayModeBar: false, responsive: true, locale: "nb" };
-  Plotly.newPlot(elementId, [traceNominell, traceReell], layout, config);
+  Plotly.newPlot(elementId, [traceNominell, traceReell], layout, plotlyConfig());
 }
 
 // --- Toppliste-graf (delt mellom niv 0, 1, 2) ---
@@ -364,10 +423,10 @@ function rendrerToppliste(elementId, rader, { metrikk = "realvekst_pst" } = {}) 
     },
     yaxis: { automargin: true, tickfont: { size: 13 } },
     showlegend: false,
+    transition: plotlyLayoutTransisjon(),
   };
 
-  const config = { displayModeBar: false, responsive: true, locale: "nb" };
-  Plotly.newPlot(elementId, [trace], layout, config);
+  Plotly.newPlot(elementId, [trace], layout, plotlyConfig());
 }
 
 // --- Brodsmulesti ---
@@ -476,6 +535,7 @@ function bindFilterUi() {
   const liste = document.getElementById("filter-posttype-liste");
   const fraSel = document.getElementById("filter-fra-aar");
   const tilSel = document.getElementById("filter-til-aar");
+  const terskel = document.getElementById("filter-terskel");
 
   let timeout = null;
   soek.addEventListener("input", (e) => {
@@ -500,32 +560,57 @@ function bindFilterUi() {
     settFilterStateOgRender({ til: parseInt(e.target.value, 10) });
   });
 
+  let terskelTimeout = null;
+  terskel.addEventListener("input", (e) => {
+    const raa = e.target.value;
+    clearTimeout(terskelTimeout);
+    terskelTimeout = setTimeout(() => {
+      if (raa === "" || raa === null) {
+        settFilterStateOgRender({ tr: null });
+        return;
+      }
+      const num = Number(raa);
+      if (!Number.isFinite(num) || num < 0) {
+        settFilterStateOgRender({ tr: null });
+        return;
+      }
+      settFilterStateOgRender({ tr: num });
+    }, 220);
+  });
+
   nullstill.addEventListener("click", () => {
     soek.value = "";
+    terskel.value = "";
     liste
       .querySelectorAll('input[type="checkbox"]:checked')
       .forEach((c) => (c.checked = false));
-    settFilterStateOgRender({ q: "", pt: [], fra: null, til: null });
+    settFilterStateOgRender({ q: "", pt: [], fra: null, til: null, tr: null });
   });
 }
 
 function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
   const status = document.getElementById("filter-status");
   const nullstill = document.getElementById("filter-nullstill");
-  const { q, pt, fra, til } = lesUrlTilstand();
+  const { q, pt, fra, til, tr } = lesUrlTilstand();
   const periodeEndret =
     metadata !== undefined &&
     ((fra !== null && fra !== metadata.start) ||
       (til !== null && til !== metadata.slutt));
-  const aktivt = q || pt.length > 0 || periodeEndret;
+  const aktivt = q || pt.length > 0 || periodeEndret || tr !== null;
   nullstill.hidden = !aktivt;
   const deler = [];
-  if (q || pt.length > 0) {
+  if (q || pt.length > 0 || tr !== null) {
     deler.push(`viser ${antallVist} av ${antallTotalt} ${etikett}`);
   }
   if (periodeEndret) {
     const { fra: f, til: t } = gjeldendePeriode(metadata);
     deler.push(`periode ${f}–${t}`);
+  }
+  if (tr !== null) {
+    const trTekst = tr.toLocaleString("nb-NO", {
+      maximumFractionDigits: 1,
+    });
+    deler.push(`terskel |realvekst| ≥ ${trTekst} %`);
   }
   status.textContent = deler.length > 0 ? `Filter aktivt: ${deler.join("; ")}.` : "";
 }
@@ -540,7 +625,7 @@ function tomStateHtml() {
 }
 
 function synkroniserFilterInputer() {
-  const { q, pt } = lesUrlTilstand();
+  const { q, pt, tr } = lesUrlTilstand();
   const soek = document.getElementById("filter-soek");
   if (soek && soek.value !== q) soek.value = q;
   const liste = document.getElementById("filter-posttype-liste");
@@ -549,6 +634,13 @@ function synkroniserFilterInputer() {
     liste.querySelectorAll('input[type="checkbox"]').forEach((c) => {
       c.checked = valgt.has(c.value);
     });
+  }
+  const terskel = document.getElementById("filter-terskel");
+  if (terskel) {
+    const onsket = tr !== null ? String(tr) : "";
+    if (terskel.value !== onsket && document.activeElement !== terskel) {
+      terskel.value = onsket;
+    }
   }
   // Periode-dropdownene rebygges fra metadata i settUtFilterPanel,
   // saa de plukker opp valgt periode der.
@@ -562,7 +654,7 @@ async function visNiva0() {
   synkroniserFilterInputer();
   renderBrodsmule([{ tekst: "Alle departementer", url: null }]);
 
-  const { q, pt } = lesUrlTilstand();
+  const { q, pt, tr } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
   const alleDeps = data.departementer.map((d) => {
@@ -582,7 +674,9 @@ async function visNiva0() {
       (a.har_strukturelt_brudd ? 1 : 0) - (b.har_strukturelt_brudd ? 1 : 0) ||
       (b.realvekst_pst ?? -1e9) - (a.realvekst_pst ?? -1e9)
   );
-  const filtrerteDeps = alleDeps.filter((d) => departementMatcher(d, qNorm, pt));
+  const filtrerteDeps = alleDeps
+    .filter((d) => departementMatcher(d, qNorm, pt))
+    .filter((d) => terskelMatcher(d, tr));
   oppdaterFilterStatus(
     filtrerteDeps.length,
     alleDeps.length,
@@ -625,9 +719,10 @@ async function visNiva0() {
         <h2 id="topp-tittel">Realvekst per departement</h2>
         <p class="seksjon-beskrivelse">
           Sortert synkende på realvekst i perioden ${periode.fra}–${periode.til},
-          i reelle ${data.metadata.basisaar}-kroner. Klikk på en
-          stolpe for å se programområder under departementet. Departementer med strukturelle
-          brudd er markert i oransje og plassert nederst.
+          i reelle ${data.metadata.basisaar}-kroner. Klikk på en stolpe
+          for å se programområder under departementet, eller bruk
+          tabellen under for tastaturnavigasjon. Departementer med
+          strukturelle brudd er markert i oransje og plassert nederst.
         </p>
       </header>
       <figure>
@@ -671,7 +766,7 @@ async function visNiva1(dep_id) {
     { tekst: dep.navn, url: null, brudd: dep.har_strukturelt_brudd },
   ]);
 
-  const { q, pt } = lesUrlTilstand();
+  const { q, pt, tr } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
   const allePo = data.programomraader.map((po) => ({
@@ -679,9 +774,9 @@ async function visNiva1(dep_id) {
     realvekst_pst: realvekstFraTidsserie(po.tidsserie, periode.fra, periode.til)
       .realvekst_pst,
   }));
-  const filtrerteProgramomraader = allePo.filter((po) =>
-    programomraadeMatcher(po, qNorm, pt)
-  );
+  const filtrerteProgramomraader = allePo
+    .filter((po) => programomraadeMatcher(po, qNorm, pt))
+    .filter((po) => terskelMatcher(po, tr));
   oppdaterFilterStatus(
     filtrerteProgramomraader.length,
     allePo.length,
@@ -791,7 +886,7 @@ async function visNiva2(dep_id, po_nr) {
     visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
-  const { q, pt } = lesUrlTilstand();
+  const { q, pt, tr } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
   const poRv = realvekstFraTidsserie(po.tidsserie, periode.fra, periode.til);
@@ -800,7 +895,9 @@ async function visNiva2(dep_id, po_nr) {
     realvekst_pst: realvekstFraTidsserie(p.tidsserie, periode.fra, periode.til)
       .realvekst_pst,
   }));
-  const filtrertePoster = allePoster.filter((p) => postMatcher(p, qNorm, pt));
+  const filtrertePoster = allePoster
+    .filter((p) => postMatcher(p, qNorm, pt))
+    .filter((p) => terskelMatcher(p, tr));
   oppdaterFilterStatus(
     filtrertePoster.length,
     allePoster.length,
@@ -856,7 +953,8 @@ async function visNiva2(dep_id, po_nr) {
       <header class="seksjon-header">
         <h2>Poster under programområde ${po.nr}</h2>
         <p class="seksjon-beskrivelse">
-          Sortert synkende på realvekst. Klikk på en stolpe for å se posten i detalj.
+          Sortert synkende på realvekst. Klikk på en stolpe eller bruk
+          tabellen under for å se en post i detalj.
         </p>
       </header>
       ${
@@ -1038,6 +1136,7 @@ function poTabell(programomraader, dep_id) {
     .join("");
   return `
     <table>
+      <caption class="visuelt-skjult">Realvekst per programområde under valgt departement</caption>
       <thead>
         <tr>
           <th scope="col">Programområde</th>
@@ -1071,6 +1170,7 @@ function posterTabell(poster, dep_id, po_nr) {
     .join("");
   return `
     <table>
+      <caption class="visuelt-skjult">Realvekst per post under valgt programområde</caption>
       <thead>
         <tr>
           <th scope="col">Post</th>
@@ -1096,6 +1196,7 @@ function tidsserieTabell(tidsserie, alltidSynlig = false) {
     .join("");
   const tabell = `
     <table>
+      <caption class="visuelt-skjult">Nominell og reell bevilgning per år</caption>
       <thead>
         <tr>
           <th scope="col">År</th>
@@ -1197,6 +1298,19 @@ async function router() {
     visFeil(err);
   } finally {
     main.setAttribute("aria-busy", "false");
+    if (SKAL_FLYTTE_FOKUS) {
+      // Sett fokus paa foerste overskrift i nytt innhold slik at
+      // skjermlesere annonserer nivaaskiftet og tastatur-brukere
+      // ikke blir staaende i et utdatert grafelement.
+      const foersteH = main.querySelector("h2, h1");
+      if (foersteH) {
+        if (!foersteH.hasAttribute("tabindex")) {
+          foersteH.setAttribute("tabindex", "-1");
+        }
+        foersteH.focus({ preventScroll: false });
+      }
+      SKAL_FLYTTE_FOKUS = false;
+    }
   }
 
   // Oppdater footer-metadata uansett
@@ -1215,7 +1329,10 @@ async function router() {
   }
 }
 
-window.addEventListener("popstate", router);
+window.addEventListener("popstate", () => {
+  SKAL_FLYTTE_FOKUS = true;
+  router();
+});
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", router);
