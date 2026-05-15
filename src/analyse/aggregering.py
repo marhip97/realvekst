@@ -69,6 +69,33 @@ def aggreger_per_programomraade(bev_reell: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def aggreger_per_programkategori(bev_reell: pd.DataFrame) -> pd.DataFrame:
+    """Aggregér til (departement × programkategori × år).
+
+    Programkategori er det finere nivået under programområde i
+    statsbudsjettets hierarki. Hvert programområde inneholder flere
+    programkategorier (122 distinkte kategorier i datasettet).
+
+    Brukes i frontend-data fra og med PR der 'programområde' ble
+    erstattet av 'programkategori' i dashbordet.
+    """
+    aar_kol = _aarskolonne(bev_reell)
+    return (
+        bev_reell.groupby(
+            [
+                "Fagdepartement_id",
+                "Fagdepartement",
+                "Programkategori_id",
+                "Programkategori",
+                aar_kol,
+            ],
+            as_index=False,
+        )
+        .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
+        .rename(columns={aar_kol: "Ar"})
+    )
+
+
 def aggreger_per_kapittel(bev_reell: pd.DataFrame) -> pd.DataFrame:
     """Aggregér til (departement × kapittel × år).
 

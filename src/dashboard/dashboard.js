@@ -121,6 +121,12 @@ function lesUrlTilstand() {
     // 90-poster (post 90+ = utlaan/kapitaltilskudd). Default ekskludert
     // fordi netto kapitalbevegelser ofte gir negative summer.
     p90: p90Raw === "1",
+    kapittel: u.searchParams.get("kapittel")
+      ? parseInt(u.searchParams.get("kapittel"), 10)
+      : null,
+    basis: u.searchParams.get("basis")
+      ? parseInt(u.searchParams.get("basis"), 10)
+      : null,
     kalkDep: u.searchParams.get("kalk_dep")
       ? parseInt(u.searchParams.get("kalk_dep"), 10)
       : null,
@@ -154,6 +160,8 @@ function lagUrl({
   tab = "drilldown",
   type = "utgift",
   p90 = false,
+  kapittel = null,
+  basis = null,
   kalkDep = null,
   kalkPo = null,
   kalkPost = null,
@@ -184,6 +192,8 @@ function lagUrl({
     // Type og p90 lagres bare naar de avviker fra default.
     if (type === "inntekt") params.set("type", "inntekt");
     if (p90) params.set("p90", "1");
+    if (kapittel !== null) params.set("kapittel", kapittel);
+    if (basis !== null) params.set("basis", basis);
   }
   const sok = params.toString();
   return sok ? `?${sok}` : window.location.pathname;
@@ -196,6 +206,31 @@ function gjeldendePeriode(metadata) {
     fra: fra !== null ? fra : metadata.start,
     til: til !== null ? til : metadata.slutt,
   };
+}
+
+function effektivtBasisaar(metadata) {
+  const { basis } = lesUrlTilstand();
+  return basis !== null ? basis : metadata.basisaar;
+}
+
+function rebaselineFaktor(metadata) {
+  // De prosesserte JSON-filene er deflatert til metadata.basisaar.
+  // Naar bruker velger et annet basisaar, re-skaleres alle reelle
+  // beloep med forholdstallet mellom kumulative prisindekser.
+  // Vi bruker statlig deflator som approksimasjon for aggregerte
+  // tall; for ren post-visning er dette presist (de fleste poster
+  // bruker statlig deflator) eller naer nok for tolkningsformaal.
+  const indeks = metadata.prisindeks;
+  const valgt = effektivtBasisaar(metadata);
+  if (!indeks || valgt === metadata.basisaar) return 1;
+  const i = indeks.aar.indexOf(valgt);
+  if (i === -1) return 1;
+  return indeks.statlig[i] / 100;
+}
+
+function rebaselineReell(verdi, metadata) {
+  if (verdi === null || verdi === undefined) return verdi;
+  return verdi * rebaselineFaktor(metadata);
 }
 
 function realvekstFraTidsserie(tidsserie, fraAr, tilAr) {
@@ -227,6 +262,8 @@ function naviger(state) {
     tab: naa.tab,
     type: naa.type,
     p90: naa.p90,
+    kapittel: naa.kapittel,
+    basis: naa.basis,
     kalkDep: naa.kalkDep,
     kalkPo: naa.kalkPo,
     kalkPost: naa.kalkPost,
@@ -242,7 +279,17 @@ function naviger(state) {
   router();
 }
 
-function settFilterStateOgRender({ q, pt, fra, til, tr, type, p90 } = {}) {
+function settFilterStateOgRender({
+  q,
+  pt,
+  fra,
+  til,
+  tr,
+  type,
+  p90,
+  kapittel,
+  basis,
+} = {}) {
   // Bevarer drilldown-nivaa, oppdaterer kun filter-delene av URL.
   const naa = lesUrlTilstand();
   const ny = {
@@ -256,6 +303,8 @@ function settFilterStateOgRender({ q, pt, fra, til, tr, type, p90 } = {}) {
     tr: tr !== undefined ? tr : naa.tr,
     type: type !== undefined ? type : naa.type,
     p90: p90 !== undefined ? p90 : naa.p90,
+    kapittel: kapittel !== undefined ? kapittel : naa.kapittel,
+    basis: basis !== undefined ? basis : naa.basis,
   };
   const url = lagUrl(ny);
   window.history.replaceState(ny, "", url);
@@ -308,6 +357,18 @@ function departementMatcher(dep, q, postTyper) {
   }
   if (!q) return true;
   return _matcherTekst(dep.navn, q) || _matcherTekst(String(dep.id), q);
+}
+
+function postgruppeForPost(post) {
+  // Mapper postnummer til en av de fem statsbudsjett-postgruppene
+  // som ogsaa brukes i realverdikalkulatoren.
+  const n = post.post_nr;
+  if (n <= 29) return "Utgifter til drift (01–29)";
+  if (n <= 49) return "Utgifter til investeringer (30–49)";
+  if (n <= 59) return "Overføringer til andre statsregnskap (50–59)";
+  if (n <= 69) return "Overføringer til kommuner og fylkeskommuner (60–69)";
+  if (n <= 89) return "Andre overføringer (70–89)";
+  return "Utlån, kapitaltilskudd, aksjer (90–99)";
 }
 
 function postKategoriMatcher(post, type, inkluder90) {
@@ -569,29 +630,9 @@ function renderBrodsmule(steg) {
 
 let FILTER_INIT_DONE = false;
 
-function settUtFilterPanel(metadata) {
-  const liste = document.getElementById("filter-posttype-liste");
-  if (liste) {
-    const typer = metadata?.post_typer || [];
-    const { pt } = lesUrlTilstand();
-    const valgt = new Set(pt);
-    if (typer.length === 0) {
-      liste.innerHTML = `<p class="filter-felt__hjelp">Ingen post-typer i datasettet.</p>`;
-    } else {
-      liste.innerHTML = typer
-        .map(
-          (t) => `
-      <label class="filter-posttype-valg">
-        <input type="checkbox" value="${escapeHtml(t)}" ${
-          valgt.has(t) ? "checked" : ""
-        } />
-        <span>${escapeHtml(t)}</span>
-      </label>`
-        )
-        .join("");
-    }
-  }
-  settUtPeriodeDropdowns(metadata);
+function settUtFilterPanel(_metadata) {
+  // Post-type-liste og periode-dropdowns er flyttet til hurtignavigasjon;
+  // funksjonen beholdes for kompatibilitet med eksisterende kall.
 }
 
 function settUtPeriodeDropdowns(metadata) {
@@ -626,30 +667,12 @@ function bindFilterUi() {
   if (FILTER_INIT_DONE) return;
   FILTER_INIT_DONE = true;
 
-  // Soekefeltet er fjernet fra filter-panelet — hurtignavigasjonen
-  // dekker det behovet. Tekstsoek via 'q'-parameter i URL respekteres
-  // fortsatt for delbare lenker.
+  // Filterpanelet inneholder kun terskel + nullstill etter at
+  // soek, post-type og periode er flyttet til hurtignavigasjonen.
+  // Resterende kontroller bindes om de finnes.
   const nullstill = document.getElementById("filter-nullstill");
-  const liste = document.getElementById("filter-posttype-liste");
-  const fraSel = document.getElementById("filter-fra-aar");
-  const tilSel = document.getElementById("filter-til-aar");
   const terskel = document.getElementById("filter-terskel");
-
-  liste.addEventListener("change", (e) => {
-    if (e.target.matches('input[type="checkbox"]')) {
-      const valgt = Array.from(
-        liste.querySelectorAll('input[type="checkbox"]:checked')
-      ).map((c) => c.value);
-      settFilterStateOgRender({ pt: valgt });
-    }
-  });
-
-  fraSel.addEventListener("change", (e) => {
-    settFilterStateOgRender({ fra: parseInt(e.target.value, 10) });
-  });
-  tilSel.addEventListener("change", (e) => {
-    settFilterStateOgRender({ til: parseInt(e.target.value, 10) });
-  });
+  if (!terskel || !nullstill) return;
 
   let terskelTimeout = null;
   terskel.addEventListener("input", (e) => {
@@ -671,9 +694,6 @@ function bindFilterUi() {
 
   nullstill.addEventListener("click", () => {
     terskel.value = "";
-    liste
-      .querySelectorAll('input[type="checkbox"]:checked')
-      .forEach((c) => (c.checked = false));
     settFilterStateOgRender({
       q: "",
       pt: [],
@@ -682,45 +702,14 @@ function bindFilterUi() {
       tr: null,
       type: "utgift",
       p90: false,
-    });
-  });
-
-  // Periode-presets: 'Siste 4 ar' setter fra=2022, til=2026.
-  // 'Tilpass' toggler synlighet av fra/til-velger.
-  const presetKnapper = document.querySelectorAll(".periode-preset");
-  presetKnapper.forEach((knapp) => {
-    knapp.addEventListener("click", () => {
-      const preset = knapp.dataset.preset;
-      if (preset === "siste4") {
-        // Hardkodet kompakt periode 2022-2026. Hvis metadata har annen
-        // slutt, bruker vi den; men start er alltid sluttår - 4.
-        const oversikt = OVERSIKT_CACHE;
-        const slutt = oversikt?.metadata?.slutt ?? 2026;
-        const fra = slutt - 4;
-        // Skjul tilpass-panelet ved preset-valg.
-        const tilpass = document.getElementById("filter-periode-tilpass");
-        if (tilpass) tilpass.hidden = true;
-        oppdaterPresetAriaTilstand("siste4");
-        settFilterStateOgRender({ fra, til: slutt });
-      } else if (preset === "tilpass") {
-        const tilpass = document.getElementById("filter-periode-tilpass");
-        if (tilpass) {
-          const apent = !tilpass.hidden;
-          tilpass.hidden = apent;
-          knapp.setAttribute("aria-expanded", apent ? "false" : "true");
-        }
-      }
+      kapittel: null,
+      basis: null,
     });
   });
 }
 
-function oppdaterPresetAriaTilstand(aktivPreset) {
-  document.querySelectorAll(".periode-preset").forEach((k) => {
-    if (k.dataset.preset === "siste4") {
-      k.setAttribute("aria-pressed", aktivPreset === "siste4" ? "true" : "false");
-      k.classList.toggle("knapp--sekundaer", aktivPreset !== "siste4");
-    }
-  });
+function oppdaterPresetAriaTilstand() {
+  // Beholdes som no-op for bakoverkompatibilitet med synkroniserFilterInputer.
 }
 
 function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
@@ -853,36 +842,59 @@ async function visNiva0() {
         )
       : null;
 
+  // Samlet realvekst for hele statsbudsjettet basert paa valgt type
+  // og 90-post-toggle. Default 'utgift_uten90' viser hele utgiftssiden
+  // ekskl. utlaan/kapitaltilskudd.
+  const { type: typeValg, p90: p90Valg } = lesUrlTilstand();
+  const samletKey = `${typeValg}_${p90Valg ? "med90" : "uten90"}`;
+  const samletSerie = data.metadata.samlet?.[samletKey] || [];
+  const samletRv = realvekstFraTidsserie(samletSerie, periode.fra, periode.til);
+  const samletEtikett =
+    typeValg === "inntekt"
+      ? "Realvekst statsinntekter"
+      : "Realvekst statsutgifter";
+  const samletBeskrivelse = `${typeValg === "inntekt" ? "Inntektssiden" : "Utgiftssiden"} av statsbudsjettet${p90Valg ? "" : ", ekskl. 90-poster (utlån/kapitaltilskudd)"}.`;
+
+  // Topp 10 departementer (ekskl. strukturelle brudd) for stolpegrafen
+  // og hovedtabellen. Departementer med brudd vises i egen seksjon.
+  const topp10 = filtrerteDeps
+    .filter((d) => !d.har_strukturelt_brudd && d.realvekst_pst !== null)
+    .slice(0, 10);
+
   const html = `
     <section class="kpi-rad" aria-labelledby="kpi-tittel">
       <h2 id="kpi-tittel" class="visuelt-skjult">Nøkkeltall</h2>
-      ${kpi("Periode", `${periode.fra}–${periode.til}`, `Realvekst i ${data.metadata.basisaar}-kroner`)}
-      ${kpi("Departementer", String(filtrerteDeps.length), "I valgt filter")}
-      ${kpi("Høyeste realvekst", hoyest ? formaterProsent(hoyest.realvekst_pst) : "—", hoyest?.navn || "")}
-      ${kpi("Laveste realvekst (uten brudd)", lavest ? formaterProsent(lavest.realvekst_pst) : "—", lavest?.navn || "")}
+      ${kpi(`${samletEtikett} ${periode.fra}–${periode.til}`, formaterProsent(samletRv.realvekst_pst), samletBeskrivelse, endringsklasse(samletRv.realvekst_pst))}
+      ${kpi(
+        `Reell bevilgning ${periode.til}`,
+        formaterBeloep(rebaselineReell(samletRv.til?.reell, data.metadata)),
+        `I ${effektivtBasisaar(data.metadata)}-kroner`
+      )}
+      ${kpi(`Nominell bevilgning ${periode.til}`, formaterBeloep(samletRv.til?.nominell), "")}
+      ${kpi("Høyeste realvekst i dep.", hoyest ? formaterProsent(hoyest.realvekst_pst) : "—", hoyest?.navn || "")}
     </section>
 
     <section class="toppliste" aria-labelledby="topp-tittel">
       <header class="seksjon-header">
-        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
-        <h2 id="topp-tittel">Realvekst per departement</h2>
+        
+        <h2 id="topp-tittel">Topp 10 departementer — realvekst ${periode.fra}–${periode.til}</h2>
         <p class="seksjon-beskrivelse">
-          Sortert synkende på realvekst i perioden ${periode.fra}–${periode.til},
-          i reelle ${data.metadata.basisaar}-kroner. Klikk på en stolpe
-          eller en rad i tabellen under for å se programområder under
-          departementet. Departementer med strukturelle brudd er markert
-          i oransje og plassert nederst.
+          De 10 departementene med høyest realvekst i perioden, i reelle
+          ${effektivtBasisaar(data.metadata)}-kroner. Klikk på en stolpe
+          eller en rad i tabellen under for å se programkategorier under
+          departementet. Departementer med strukturelle brudd er ikke
+          inkludert i topp 10, men listet for seg under.
         </p>
       </header>
       <figure>
         <div class="graf-wrapper">
           <p class="klikk-hint" aria-hidden="true">Klikk en stolpe →</p>
           <div id="toppliste-graf" class="graf" role="img"
-               aria-label="Horisontal stolpegraf med realvekst per departement"></div>
+               aria-label="Horisontal stolpegraf med topp 10 departementer på realvekst"></div>
         </div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
-          ${depTabell(filtrerteDeps, periode)}
+          ${depTabell(topp10, periode)}
         </details>
         <figcaption class="metode-merknad">
           Reell bevilgning beregnes ved kumulativ prisindeks med basisår
@@ -896,12 +908,12 @@ async function visNiva0() {
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerToppliste("toppliste-graf", filtrerteDeps);
+  rendrerToppliste("toppliste-graf", topp10);
 
   // Klikk på stolpe -> drilldown
   document.getElementById("toppliste-graf").on("plotly_click", (ev) => {
     const navn = ev.points[0].y;
-    const dep = filtrerteDeps.find((d) => d.navn === navn);
+    const dep = topp10.find((d) => d.navn === navn);
     if (dep) naviger({ dep: dep.id });
   });
 }
@@ -932,7 +944,7 @@ async function visNiva1(dep_id) {
   oppdaterFilterStatus(
     filtrerteProgramomraader.length,
     allePo.length,
-    "programområder",
+    "programkategorier",
     data.metadata
   );
 
@@ -952,10 +964,10 @@ async function visNiva1(dep_id) {
   const html = `
     <section class="kpi-rad">
       <h2 class="visuelt-skjult">Nøkkeltall for ${escapeHtml(dep.navn)}</h2>
-      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(rebaselineReell(sluttReell, data.metadata)), `I ${effektivtBasisaar(data.metadata)}-kroner`)}
       ${kpi("Nominell bevilgning " + periode.til, formaterBeloep(sluttNominell), "")}
       ${kpi("Realvekst " + periode.fra + "–" + periode.til, formaterProsent(depRv.realvekst_pst), "", endringsklasse(depRv.realvekst_pst))}
-      ${kpi("Programområder", String(filtrerteProgramomraader.length), `${tellPoster(filtrerteProgramomraader)} poster totalt`)}
+      ${kpi("Programkategorier", String(filtrerteProgramomraader.length), `${tellPoster(filtrerteProgramomraader)} poster totalt`)}
     </section>
 
     ${dep.har_strukturelt_brudd ? bruddAdvarselHtml(dep) : ""}
@@ -983,10 +995,10 @@ async function visNiva1(dep_id) {
 
     <section class="toppliste" aria-labelledby="po-tittel">
       <header class="seksjon-header">
-        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
-        <h2 id="po-tittel">Programområder under ${escapeHtml(dep.navn)}</h2>
+        
+        <h2 id="po-tittel">Programkategorier under ${escapeHtml(dep.navn)}</h2>
         <p class="seksjon-beskrivelse">
-          Klikk på en stolpe eller en rad i tabellen for å se postene under programområdet.
+          Klikk på en stolpe eller en rad i tabellen for å se postene under programkategorien.
         </p>
       </header>
       ${
@@ -996,7 +1008,7 @@ async function visNiva1(dep_id) {
         <div class="graf-wrapper">
           <p class="klikk-hint" aria-hidden="true">Klikk en stolpe →</p>
           <div id="po-graf" class="graf" role="img"
-               aria-label="Horisontal stolpegraf med realvekst per programområde"></div>
+               aria-label="Horisontal stolpegraf med realvekst per programkategori"></div>
         </div>
         <details class="tabell-alternativ">
           <summary>Vis som tabell</summary>
@@ -1034,7 +1046,7 @@ async function visNiva2(dep_id, po_nr) {
   const dep = data.departement;
   const po = data.programomraader.find((p) => p.nr === po_nr);
   if (!po) {
-    visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
+    visIkkeFunnet(`Programkategori ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
   const { q, pt, tr, type, p90 } = lesUrlTilstand();
@@ -1081,7 +1093,7 @@ async function visNiva2(dep_id, po_nr) {
   const html = `
     <section class="kpi-rad">
       <h2 class="visuelt-skjult">Nøkkeltall for ${escapeHtml(po.navn)}</h2>
-      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(rebaselineReell(sluttReell, data.metadata)), `I ${effektivtBasisaar(data.metadata)}-kroner`)}
       ${kpi("Nominell bevilgning " + periode.til, formaterBeloep(sluttNominell), "")}
       ${kpi("Realvekst " + periode.fra + "–" + periode.til, formaterProsent(poRv.realvekst_pst), "", endringsklasse(poRv.realvekst_pst))}
       ${kpi("Antall poster", String(filtrertePoster.length), filtrertePoster.length === allePoster.length ? "" : `av ${allePoster.length} totalt`)}
@@ -1103,8 +1115,8 @@ async function visNiva2(dep_id, po_nr) {
 
     <section class="toppliste">
       <header class="seksjon-header">
-        <p class="seksjon-kicker">Drilldown — klikk for å gå videre</p>
-        <h2>Poster under programområde ${po.nr}</h2>
+        
+        <h2>Poster under programkategori ${po.nr}</h2>
         <p class="seksjon-beskrivelse">
           Sortert synkende på realvekst. Klikk på en stolpe eller en rad
           i tabellen under for å se en post i detalj.
@@ -1150,12 +1162,12 @@ async function visNiva3(dep_id, po_nr, post_id) {
   const dep = data.departement;
   const po = data.programomraader.find((p) => p.nr === po_nr);
   if (!po) {
-    visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
+    visIkkeFunnet(`Programkategori ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
   const post = po.poster.find((p) => p.post_id === post_id);
   if (!post) {
-    visIkkeFunnet(`Post ${post_id} finnes ikke under programområde ${po_nr}.`);
+    visIkkeFunnet(`Post ${post_id} finnes ikke under programkategori ${po_nr}.`);
     return;
   }
 
@@ -1177,24 +1189,35 @@ async function visNiva3(dep_id, po_nr, post_id) {
   const sluttReell = postRv.til?.reell;
   const sluttNominell = postRv.til?.nominell;
 
+  const postgruppeNavn = postgruppeForPost(post);
+  const deflatorBeskrivelse =
+    post.deflator_type === "kommunal"
+      ? "Kommunal deflator"
+      : "Statsbudsjettets utgiftsdeflator";
+  const deflatorMerknad = `Postgruppe-deflator vil bli anvendt når slike data foreligger; i dag brukes ${deflatorBeskrivelse.toLowerCase()}.`;
+
   const html = `
     <section class="kpi-rad">
       <h2 class="visuelt-skjult">Nøkkeltall</h2>
-      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(sluttReell), `I ${data.metadata.basisaar}-kroner`)}
+      ${kpi("Reell bevilgning " + periode.til, formaterBeloep(rebaselineReell(sluttReell, data.metadata)), `I ${effektivtBasisaar(data.metadata)}-kroner`)}
       ${kpi("Nominell bevilgning " + periode.til, formaterBeloep(sluttNominell), "")}
       ${kpi("Realvekst " + periode.fra + "–" + periode.til, formaterProsent(postRv.realvekst_pst), "", endringsklasse(postRv.realvekst_pst))}
-      ${kpi("Deflator", post.deflator_type === "kommunal" ? "Kommunal" : "Statsbudsjettets utgiftsdeflator", `Post-type: ${post.post_type || "—"}`)}
     </section>
 
     <section class="metadata-blokk">
       <h2 class="visuelt-skjult">Metadata om posten</h2>
       <dl class="metadata">
         <div><dt>Departement</dt><dd>${escapeHtml(dep.navn)}</dd></div>
-        <div><dt>Programområde</dt><dd>${po.nr} ${escapeHtml(po.navn)}</dd></div>
+        <div><dt>Programkategori</dt><dd>${po.nr} ${escapeHtml(po.navn)}</dd></div>
         <div><dt>Kapittel</dt><dd>${post.kapittel_nr} ${escapeHtml(post.kapittel)}</dd></div>
         <div><dt>Post</dt><dd>${String(post.post_nr).padStart(2, "0")} ${escapeHtml(post.post_navn)}</dd></div>
-        <div><dt>Post-id</dt><dd class="tall">${post.post_id}</dd></div>
-        <div><dt>Deflator</dt><dd>${post.deflator_type === "kommunal" ? "Kommunal" : "Statlig"} (postnummer ${post.post_nr})</dd></div>
+        <div>
+          <dt>Deflator</dt>
+          <dd>
+            ${deflatorBeskrivelse}
+            <span class="metadata__hjelp">Postgruppe: ${escapeHtml(postgruppeNavn)}. ${deflatorMerknad}</span>
+          </dd>
+        </div>
       </dl>
     </section>
 
@@ -1295,10 +1318,10 @@ function poTabell(programomraader, dep_id) {
     .join("");
   return `
     <table>
-      <caption class="visuelt-skjult">Realvekst per programområde under valgt departement. Hver rad lenker til programområdedetaljer.</caption>
+      <caption class="visuelt-skjult">Realvekst per programkategori under valgt departement. Hver rad lenker til programkategoridetaljer.</caption>
       <thead>
         <tr>
-          <th scope="col">Programområde</th>
+          <th scope="col">Programkategori</th>
           <th scope="col" class="tall-kol">Realvekst (pst.)</th>
           <th scope="col" class="tall-kol">Poster</th>
           <th scope="col" class="kol-chevron" aria-hidden="true"></th>
@@ -1331,7 +1354,7 @@ function posterTabell(poster, dep_id, po_nr) {
     .join("");
   return `
     <table>
-      <caption class="visuelt-skjult">Realvekst per post under valgt programområde. Hver rad lenker til postdetaljer.</caption>
+      <caption class="visuelt-skjult">Realvekst per post under valgt programkategori. Hver rad lenker til postdetaljer.</caption>
       <thead>
         <tr>
           <th scope="col">Post</th>
@@ -1438,8 +1461,8 @@ async function rendreDrilldownNav() {
     ),
   ].join("");
 
-  // Programomraade-options krever data fra valgt departement.
-  let poOpts = `<option value="">Velg programområde …</option>`;
+  // Programkategori-options krever data fra valgt departement.
+  let poOpts = `<option value="">Velg programkategori …</option>`;
   let poDisabled = dep === null ? "disabled" : "";
   if (dep !== null) {
     try {
@@ -1459,8 +1482,44 @@ async function rendreDrilldownNav() {
     }
   }
 
-  // Post-options krever programomraade.
-  const { type, p90 } = lesUrlTilstand();
+  // Kapittel-options bygges fra unike (kapittel_nr, kapittel-navn)-
+  // kombinasjoner under valgt programkategori. Selv om datamodellen
+  // ikke har kapittel som eget niva, viser nedtrekket navn + nr og
+  // navigerer ved at en post under valgt kapittel velges som default.
+  const { type, p90, kapittel } = lesUrlTilstand();
+  let kapittelOpts = `<option value="">Velg kapittel …</option>`;
+  let kapittelDisabled = po === null ? "disabled" : "";
+  let kapitler = [];
+  if (dep !== null && po !== null) {
+    try {
+      const data = await hentDepartement(dep);
+      const valgtPo = data.programomraader.find((p) => p.nr === po);
+      if (valgtPo) {
+        const kapMap = new Map();
+        for (const p of valgtPo.poster) {
+          if (!postKategoriMatcher(p, type, p90)) continue;
+          if (!kapMap.has(p.kapittel_nr)) {
+            kapMap.set(p.kapittel_nr, p.kapittel);
+          }
+        }
+        kapitler = [...kapMap.entries()].sort((a, b) => a[0] - b[0]);
+        kapittelOpts += kapitler
+          .map(
+            ([nr, navn]) =>
+              `<option value="${nr}" ${
+                nr === kapittel ? "selected" : ""
+              }>kap. ${nr} — ${escapeHtml(navn)}</option>`
+          )
+          .join("");
+      } else {
+        kapittelDisabled = "disabled";
+      }
+    } catch (e) {
+      kapittelDisabled = "disabled";
+    }
+  }
+
+  // Post-options filtreres ogsa paa valgt kapittel naar det er satt.
   let postOpts = `<option value="">Velg post …</option>`;
   let postDisabled = po === null ? "disabled" : "";
   if (dep !== null && po !== null) {
@@ -1470,6 +1529,7 @@ async function rendreDrilldownNav() {
       if (valgtPo) {
         const poster = [...valgtPo.poster]
           .filter((p) => postKategoriMatcher(p, type, p90))
+          .filter((p) => kapittel === null || p.kapittel_nr === kapittel)
           .sort((a, b) =>
             a.kapittel_nr === b.kapittel_nr
               ? a.post_nr - b.post_nr
@@ -1493,6 +1553,22 @@ async function rendreDrilldownNav() {
       postDisabled = "disabled";
     }
   }
+
+  // Periode-velger og basisaar-velger leses fra metadata.
+  const meta = oversikt.metadata;
+  const aar = (meta.prisindeks?.aar || []).slice().sort((a, b) => a - b);
+  const { fra: fraUrl, til: tilUrl, basis } = lesUrlTilstand();
+  const periodeFra = fraUrl !== null ? fraUrl : meta.start;
+  const periodeTil = tilUrl !== null ? tilUrl : meta.slutt;
+  const valgtBasisaar = basis !== null ? basis : meta.basisaar;
+  const aarOpt = (verdi, valgt) =>
+    aar.map((a) => `<option value="${a}" ${a === valgt ? "selected" : ""} ${verdi === "fra" && a >= periodeTil ? "disabled" : ""} ${verdi === "til" && a <= periodeFra ? "disabled" : ""}>${a}</option>`).join("");
+  const basisaarOpts = aar
+    .map(
+      (a) =>
+        `<option value="${a}" ${a === valgtBasisaar ? "selected" : ""}>${a}</option>`
+    )
+    .join("");
 
   const niva = post !== null ? 3 : po !== null ? 2 : dep !== null ? 1 : 0;
 
@@ -1518,7 +1594,7 @@ async function rendreDrilldownNav() {
           po !== null
             ? `<button type="button" class="knapp ${
                 niva === 2 ? "" : "knapp--sekundaer"
-              }" data-niva-knapp="2" data-dep="${dep}" data-po="${po}">Programområde</button>`
+              }" data-niva-knapp="2" data-dep="${dep}" data-po="${po}">Programkategori</button>`
             : ""
         }
       </div>
@@ -1529,8 +1605,12 @@ async function rendreDrilldownNav() {
         <select id="dd-dep">${depOpts}</select>
       </label>
       <label class="drilldown-nav__velger">
-        <span class="filter-felt__etikett">Programområde</span>
+        <span class="filter-felt__etikett">Programkategori</span>
         <select id="dd-po" ${poDisabled}>${poOpts}</select>
+      </label>
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Kapittel</span>
+        <select id="dd-kapittel" ${kapittelDisabled}>${kapittelOpts}</select>
       </label>
       <label class="drilldown-nav__velger">
         <span class="filter-felt__etikett">Post</span>
@@ -1553,11 +1633,25 @@ async function rendreDrilldownNav() {
             }>
             <span>Inntektsposter <small>(kap. 3000–5999)</small></span>
           </label>
+          <label class="drilldown-nav__checkbox">
+            <input type="checkbox" id="dd-p90" ${p90 ? "checked" : ""}>
+            <span>Inkluder 90-poster <small>(utlån/kapitaltilskudd)</small></span>
+          </label>
         </div>
       </fieldset>
-      <label class="drilldown-nav__checkbox">
-        <input type="checkbox" id="dd-p90" ${p90 ? "checked" : ""}>
-        <span>Inkluder 90-poster <small>(utlån/kapitaltilskudd)</small></span>
+    </div>
+    <div class="drilldown-nav__rad drilldown-nav__rad--periode">
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Sammenligningsperiode — fra</span>
+        <select id="dd-fra">${aarOpt("fra", periodeFra)}</select>
+      </label>
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">til</span>
+        <select id="dd-til">${aarOpt("til", periodeTil)}</select>
+      </label>
+      <label class="drilldown-nav__velger">
+        <span class="filter-felt__etikett">Basisår for realverdi</span>
+        <select id="dd-basis">${basisaarOpts}</select>
       </label>
     </div>
   `;
@@ -1568,7 +1662,11 @@ async function rendreDrilldownNav() {
 function bindDrilldownNavUi() {
   const ddDep = document.getElementById("dd-dep");
   const ddPo = document.getElementById("dd-po");
+  const ddKap = document.getElementById("dd-kapittel");
   const ddPost = document.getElementById("dd-post");
+  const ddFra = document.getElementById("dd-fra");
+  const ddTil = document.getElementById("dd-til");
+  const ddBasis = document.getElementById("dd-basis");
 
   if (ddDep) {
     ddDep.addEventListener("change", () => {
@@ -1577,6 +1675,7 @@ function bindDrilldownNavUi() {
         dep: v ? parseInt(v, 10) : null,
         po: null,
         post: null,
+        kapittel: null,
       });
     });
   }
@@ -1588,6 +1687,15 @@ function bindDrilldownNavUi() {
         dep,
         po: v ? parseInt(v, 10) : null,
         post: null,
+        kapittel: null,
+      });
+    });
+  }
+  if (ddKap) {
+    ddKap.addEventListener("change", () => {
+      const v = ddKap.value;
+      settFilterStateOgRender({
+        kapittel: v ? parseInt(v, 10) : null,
       });
     });
   }
@@ -1600,6 +1708,21 @@ function bindDrilldownNavUi() {
         po,
         post: v ? parseInt(v, 10) : null,
       });
+    });
+  }
+  if (ddFra) {
+    ddFra.addEventListener("change", () => {
+      settFilterStateOgRender({ fra: parseInt(ddFra.value, 10) });
+    });
+  }
+  if (ddTil) {
+    ddTil.addEventListener("change", () => {
+      settFilterStateOgRender({ til: parseInt(ddTil.value, 10) });
+    });
+  }
+  if (ddBasis) {
+    ddBasis.addEventListener("change", () => {
+      settFilterStateOgRender({ basis: parseInt(ddBasis.value, 10) });
     });
   }
 
