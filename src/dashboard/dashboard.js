@@ -233,6 +233,24 @@ function rebaselineReell(verdi, metadata) {
   return verdi * rebaselineFaktor(metadata);
 }
 
+function snuTallForInntekt(verdi, snu) {
+  // Inntektskapitler (3000-5999) er bokfort med negativt fortegn i
+  // Statsregnskapet for aa balansere mot utgiftssiden. I dashbordet
+  // vises de som positive belop slik at brukeren leser dem som
+  // 'inntekt paa X kroner'.
+  if (verdi === null || verdi === undefined) return verdi;
+  return snu ? -verdi : verdi;
+}
+
+function snuTidsserieForInntekt(tidsserie, snu) {
+  if (!snu) return tidsserie;
+  return tidsserie.map((p) => ({
+    ar: p.ar,
+    nominell: snuTallForInntekt(p.nominell, true),
+    reell: snuTallForInntekt(p.reell, true),
+  }));
+}
+
 function realvekstFraTidsserie(tidsserie, fraAr, tilAr) {
   const fraP = tidsserie.find((p) => p.ar === fraAr);
   const tilP = tidsserie.find((p) => p.ar === tilAr);
@@ -716,6 +734,9 @@ function oppdaterFilterStatus(antallVist, antallTotalt, etikett, metadata) {
   const status = document.getElementById("filter-status");
   const nullstill = document.getElementById("filter-nullstill");
   const panel = document.querySelector(".filter-panel");
+  // Filter-panelet er fjernet — om elementene ikke finnes er det
+  // ingenting aa oppdatere.
+  if (!status || !nullstill) return;
   const { q, pt, fra, til, tr } = lesUrlTilstand();
   const periodeEndret =
     metadata !== undefined &&
@@ -844,10 +865,15 @@ async function visNiva0() {
 
   // Samlet realvekst for hele statsbudsjettet basert paa valgt type
   // og 90-post-toggle. Default 'utgift_uten90' viser hele utgiftssiden
-  // ekskl. utlaan/kapitaltilskudd.
+  // ekskl. utlaan/kapitaltilskudd. For inntektsserier snus fortegnet
+  // saa belop vises som positive tall.
   const { type: typeValg, p90: p90Valg } = lesUrlTilstand();
   const samletKey = `${typeValg}_${p90Valg ? "med90" : "uten90"}`;
-  const samletSerie = data.metadata.samlet?.[samletKey] || [];
+  const samletSerieRaa = data.metadata.samlet?.[samletKey] || [];
+  const samletSerie = snuTidsserieForInntekt(
+    samletSerieRaa,
+    typeValg === "inntekt"
+  );
   const samletRv = realvekstFraTidsserie(samletSerie, periode.fra, periode.til);
   const samletEtikett =
     typeValg === "inntekt"
@@ -1185,9 +1211,14 @@ async function visNiva3(dep_id, po_nr, post_id) {
     { tekst: post.post_navn, url: null },
   ]);
 
-  const startReell = postRv.fra?.reell;
-  const sluttReell = postRv.til?.reell;
-  const sluttNominell = postRv.til?.nominell;
+  // Inntektsposter (kapittel 3000-5999) lagres med negativt fortegn i
+  // Statsregnskapet. For visning snus de slik at brukeren leser dem som
+  // positive beloep.
+  const snuFortegn = post.kapittel_nr >= 3000;
+  const startReell = snuTallForInntekt(postRv.fra?.reell, snuFortegn);
+  const sluttReell = snuTallForInntekt(postRv.til?.reell, snuFortegn);
+  const sluttNominell = snuTallForInntekt(postRv.til?.nominell, snuFortegn);
+  const visTidsserie = snuTidsserieForInntekt(post.tidsserie, snuFortegn);
 
   const postgruppeNavn = postgruppeForPost(post);
   const deflatorBeskrivelse =
@@ -1228,16 +1259,16 @@ async function visNiva3(dep_id, po_nr, post_id) {
       <figure>
         <div id="tidsserie-graf" class="graf" role="img"
              aria-label="Tidsserie for posten"></div>
-        ${tidsserieTabell(post.tidsserie, true)}
+        ${tidsserieTabell(visTidsserie, true)}
         <figcaption class="metode-merknad">
-          Reell verdi i ${data.metadata.basisaar}-kroner via
-          ${post.deflator_type === "kommunal" ? "kommunal deflator" : "statsbudsjettets utgiftsdeflator"}.
+          Reell verdi i ${effektivtBasisaar(data.metadata)}-kroner via
+          ${post.deflator_type === "kommunal" ? "kommunal deflator" : "statsbudsjettets utgiftsdeflator"}.${snuFortegn ? " Inntektsbeløp vises som positive tall (originaldata har negativt fortegn)." : ""}
         </figcaption>
       </figure>
     </section>
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
-  rendrerTidsserie("tidsserie-graf", post.tidsserie);
+  rendrerTidsserie("tidsserie-graf", visTidsserie);
 }
 
 // --- HTML-fragmentbyggere ---
