@@ -64,7 +64,10 @@ class TestMarkerBruddDepartement:
         ut = marker_brudd_departement(df)
         rad = ut[ut["Fagdepartement"] == "Energidepartementet"].iloc[0]
         assert rad["har_strukturelt_brudd"]
-        assert "omorganisering" in rad["brudd_beskrivelse"].lower()
+        # Bruddtekst forklarer enten omorganisering / utskilling / etablering;
+        # nøkkelordet er at endringen knyttes til Olje- og energidepartementet.
+        tekst = rad["brudd_beskrivelse"].lower()
+        assert "olje- og energidepartementet" in tekst or "omorganisering" in tekst
 
     def test_nfd_markert(self, df):
         ut = marker_brudd_departement(df)
@@ -78,7 +81,9 @@ class TestMarkerBruddDepartement:
             ut["Fagdepartement"] == "Digitaliserings- og forvaltningsdepartementet"
         ].iloc[0]
         assert rad["har_strukturelt_brudd"]
-        assert "2014" in rad["brudd_beskrivelse"]
+        # Departementet ble etablert 1. januar 2024; bruddtekst skal nevne
+        # etableringsåret slik at brukeren vet hvorfor det er brudd.
+        assert "2024" in rad["brudd_beskrivelse"]
 
     def test_endrer_ikke_input(self, df):
         original = df.copy()

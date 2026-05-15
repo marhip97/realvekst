@@ -195,14 +195,18 @@ class TestBygDepartement:
 
     @pytest.fixture(scope="class")
     def forsvar(self, bev_reell):
-        # Forsvarsdepartementet har id-en som vi henter dynamisk
+        # Forsvarsdepartementet har id-en som vi henter dynamisk.
+        # Eksplisitt basisaar/start/slutt = prototype-parametere slik at
+        # vi kan reprodusere det validerte +181,2 % over 2014-2026.
         dep_id = int(
             bev_reell.loc[
                 bev_reell["Fagdepartement"] == "Forsvarsdepartementet",
                 "Fagdepartement_id",
             ].iloc[0]
         )
-        return bygg_departement(bev_reell, dep_id=dep_id)
+        return bygg_departement(
+            bev_reell, dep_id=dep_id, basisaar=2024, start=2014, slutt=2026
+        )
 
     def test_har_metadata(self, forsvar):
         assert "metadata" in forsvar

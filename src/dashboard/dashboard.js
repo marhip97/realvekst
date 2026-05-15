@@ -99,6 +99,8 @@ function lesUrlTilstand() {
   const tab = u.searchParams.get("tab");
   const kalkBelopRaw = u.searchParams.get("kalk_belop");
   const kalkBelopNum = kalkBelopRaw !== null ? Number(kalkBelopRaw) : null;
+  const typeRaw = u.searchParams.get("type");
+  const p90Raw = u.searchParams.get("p90");
   return {
     dep: u.searchParams.get("dep") ? parseInt(u.searchParams.get("dep"), 10) : null,
     po: u.searchParams.get("po")
@@ -113,6 +115,12 @@ function lesUrlTilstand() {
     til: u.searchParams.get("til") ? parseInt(u.searchParams.get("til"), 10) : null,
     tr: trNum !== null && Number.isFinite(trNum) && trNum >= 0 ? trNum : null,
     tab: tab === "priskalkulator" ? "priskalkulator" : "drilldown",
+    // Type-filter for utgifter (default) vs inntekter. Norsk statsbudsjett
+    // bruker kapittelserie 0001-2999 for utgifter og 3000-5999 for inntekter.
+    type: typeRaw === "inntekt" ? "inntekt" : "utgift",
+    // 90-poster (post 90+ = utlaan/kapitaltilskudd). Default ekskludert
+    // fordi netto kapitalbevegelser ofte gir negative summer.
+    p90: p90Raw === "1",
     kalkDep: u.searchParams.get("kalk_dep")
       ? parseInt(u.searchParams.get("kalk_dep"), 10)
       : null,
@@ -130,6 +138,7 @@ function lesUrlTilstand() {
       : null,
     kalkBelop:
       kalkBelopNum !== null && Number.isFinite(kalkBelopNum) ? kalkBelopNum : null,
+    kalkPostgruppe: u.searchParams.get("kalk_pg") || null,
   };
 }
 
@@ -143,12 +152,15 @@ function lagUrl({
   til = null,
   tr = null,
   tab = "drilldown",
+  type = "utgift",
+  p90 = false,
   kalkDep = null,
   kalkPo = null,
   kalkPost = null,
   kalkFra = null,
   kalkTil = null,
   kalkBelop = null,
+  kalkPostgruppe = null,
 } = {}) {
   const params = new URLSearchParams();
   if (tab === "priskalkulator") {
@@ -159,6 +171,7 @@ function lagUrl({
     if (kalkFra !== null) params.set("kalk_fra", kalkFra);
     if (kalkTil !== null) params.set("kalk_til", kalkTil);
     if (kalkBelop !== null) params.set("kalk_belop", kalkBelop);
+    if (kalkPostgruppe !== null) params.set("kalk_pg", kalkPostgruppe);
   } else {
     if (dep !== null) params.set("dep", dep);
     if (po !== null) params.set("po", po);
@@ -168,6 +181,9 @@ function lagUrl({
     if (fra !== null) params.set("fra", fra);
     if (til !== null) params.set("til", til);
     if (tr !== null) params.set("tr", tr);
+    // Type og p90 lagres bare naar de avviker fra default.
+    if (type === "inntekt") params.set("type", "inntekt");
+    if (p90) params.set("p90", "1");
   }
   const sok = params.toString();
   return sok ? `?${sok}` : window.location.pathname;
@@ -209,12 +225,15 @@ function naviger(state) {
     til: naa.til,
     tr: naa.tr,
     tab: naa.tab,
+    type: naa.type,
+    p90: naa.p90,
     kalkDep: naa.kalkDep,
     kalkPo: naa.kalkPo,
     kalkPost: naa.kalkPost,
     kalkFra: naa.kalkFra,
     kalkTil: naa.kalkTil,
     kalkBelop: naa.kalkBelop,
+    kalkPostgruppe: naa.kalkPostgruppe,
     ...state,
   };
   const url = lagUrl(samlet);
@@ -223,7 +242,7 @@ function naviger(state) {
   router();
 }
 
-function settFilterStateOgRender({ q, pt, fra, til, tr } = {}) {
+function settFilterStateOgRender({ q, pt, fra, til, tr, type, p90 } = {}) {
   // Bevarer drilldown-nivaa, oppdaterer kun filter-delene av URL.
   const naa = lesUrlTilstand();
   const ny = {
@@ -235,6 +254,8 @@ function settFilterStateOgRender({ q, pt, fra, til, tr } = {}) {
     fra: fra !== undefined ? fra : naa.fra,
     til: til !== undefined ? til : naa.til,
     tr: tr !== undefined ? tr : naa.tr,
+    type: type !== undefined ? type : naa.type,
+    p90: p90 !== undefined ? p90 : naa.p90,
   };
   const url = lagUrl(ny);
   window.history.replaceState(ny, "", url);
@@ -287,6 +308,19 @@ function departementMatcher(dep, q, postTyper) {
   }
   if (!q) return true;
   return _matcherTekst(dep.navn, q) || _matcherTekst(String(dep.id), q);
+}
+
+function postKategoriMatcher(post, type, inkluder90) {
+  // Norsk statsbudsjett: kapittel 0001-2999 = utgift, 3000-5999 = inntekt.
+  // 90-postene (post_nr 90-99) er utlaan/kapitaltilskudd og default
+  // ekskludert fordi netto-tall kan vaere negative og bryter
+  // realvekst-tolkningen.
+  const erUtgift = post.kapittel_nr < 3000;
+  const er90 = post.post_nr >= 90 && post.post_nr <= 99;
+  if (type === "utgift" && !erUtgift) return false;
+  if (type === "inntekt" && erUtgift) return false;
+  if (er90 && !inkluder90) return false;
+  return true;
 }
 
 function terskelMatcher(element, terskel) {
@@ -592,19 +626,14 @@ function bindFilterUi() {
   if (FILTER_INIT_DONE) return;
   FILTER_INIT_DONE = true;
 
-  const soek = document.getElementById("filter-soek");
+  // Soekefeltet er fjernet fra filter-panelet — hurtignavigasjonen
+  // dekker det behovet. Tekstsoek via 'q'-parameter i URL respekteres
+  // fortsatt for delbare lenker.
   const nullstill = document.getElementById("filter-nullstill");
   const liste = document.getElementById("filter-posttype-liste");
   const fraSel = document.getElementById("filter-fra-aar");
   const tilSel = document.getElementById("filter-til-aar");
   const terskel = document.getElementById("filter-terskel");
-
-  let timeout = null;
-  soek.addEventListener("input", (e) => {
-    const v = e.target.value;
-    clearTimeout(timeout);
-    timeout = setTimeout(() => settFilterStateOgRender({ q: v }), 180);
-  });
 
   liste.addEventListener("change", (e) => {
     if (e.target.matches('input[type="checkbox"]')) {
@@ -641,12 +670,19 @@ function bindFilterUi() {
   });
 
   nullstill.addEventListener("click", () => {
-    soek.value = "";
     terskel.value = "";
     liste
       .querySelectorAll('input[type="checkbox"]:checked')
       .forEach((c) => (c.checked = false));
-    settFilterStateOgRender({ q: "", pt: [], fra: null, til: null, tr: null });
+    settFilterStateOgRender({
+      q: "",
+      pt: [],
+      fra: null,
+      til: null,
+      tr: null,
+      type: "utgift",
+      p90: false,
+    });
   });
 
   // Periode-presets: 'Siste 4 ar' setter fra=2022, til=2026.
@@ -1001,7 +1037,7 @@ async function visNiva2(dep_id, po_nr) {
     visIkkeFunnet(`Programområde ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
-  const { q, pt, tr } = lesUrlTilstand();
+  const { q, pt, tr, type, p90 } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
   const poRv = realvekstFraTidsserie(po.tidsserie, periode.fra, periode.til);
@@ -1011,6 +1047,7 @@ async function visNiva2(dep_id, po_nr) {
       .realvekst_pst,
   }));
   const filtrertePoster = allePoster
+    .filter((p) => postKategoriMatcher(p, type, p90))
     .filter((p) => postMatcher(p, qNorm, pt))
     .filter((p) => terskelMatcher(p, tr));
   oppdaterFilterStatus(
@@ -1423,6 +1460,7 @@ async function rendreDrilldownNav() {
   }
 
   // Post-options krever programomraade.
+  const { type, p90 } = lesUrlTilstand();
   let postOpts = `<option value="">Velg post …</option>`;
   let postDisabled = po === null ? "disabled" : "";
   if (dep !== null && po !== null) {
@@ -1430,11 +1468,13 @@ async function rendreDrilldownNav() {
       const data = await hentDepartement(dep);
       const valgtPo = data.programomraader.find((p) => p.nr === po);
       if (valgtPo) {
-        const poster = [...valgtPo.poster].sort((a, b) =>
-          a.kapittel_nr === b.kapittel_nr
-            ? a.post_nr - b.post_nr
-            : a.kapittel_nr - b.kapittel_nr
-        );
+        const poster = [...valgtPo.poster]
+          .filter((p) => postKategoriMatcher(p, type, p90))
+          .sort((a, b) =>
+            a.kapittel_nr === b.kapittel_nr
+              ? a.post_nr - b.post_nr
+              : a.kapittel_nr - b.kapittel_nr
+          );
         postOpts += poster
           .map(
             (p) =>
@@ -1497,6 +1537,29 @@ async function rendreDrilldownNav() {
         <select id="dd-post" ${postDisabled}>${postOpts}</select>
       </label>
     </div>
+    <div class="drilldown-nav__rad drilldown-nav__rad--kategori">
+      <fieldset class="drilldown-nav__type" aria-label="Type post">
+        <legend class="filter-felt__etikett">Type</legend>
+        <div class="drilldown-nav__radioer">
+          <label class="drilldown-nav__radio">
+            <input type="radio" name="dd-type" value="utgift" ${
+              type === "utgift" ? "checked" : ""
+            }>
+            <span>Utgiftsposter <small>(kap. 0001–2999)</small></span>
+          </label>
+          <label class="drilldown-nav__radio">
+            <input type="radio" name="dd-type" value="inntekt" ${
+              type === "inntekt" ? "checked" : ""
+            }>
+            <span>Inntektsposter <small>(kap. 3000–5999)</small></span>
+          </label>
+        </div>
+      </fieldset>
+      <label class="drilldown-nav__checkbox">
+        <input type="checkbox" id="dd-p90" ${p90 ? "checked" : ""}>
+        <span>Inkluder 90-poster <small>(utlån/kapitaltilskudd)</small></span>
+      </label>
+    </div>
   `;
 
   bindDrilldownNavUi();
@@ -1550,6 +1613,18 @@ function bindDrilldownNavUi() {
       else if (niva === 2) naviger({ dep: depId, po: poNr, post: null });
     });
   });
+
+  document.querySelectorAll("input[name='dd-type']").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      settFilterStateOgRender({ type: radio.value });
+    });
+  });
+  const p90Checkbox = document.getElementById("dd-p90");
+  if (p90Checkbox) {
+    p90Checkbox.addEventListener("change", () => {
+      settFilterStateOgRender({ p90: p90Checkbox.checked });
+    });
+  }
 }
 
 // --- Tab-navigering og priskalkulator ---
@@ -1602,6 +1677,50 @@ function formaterKroner(belop) {
   }).format(Math.round(belop));
 }
 
+// Postgrupper er postnummer-serier i statsbudsjettet, jf. CLAUDE.md.
+// Hver gruppe har sin egen prisutvikling; Finansdepartementet bruker
+// foreloepig to brede deflatorer (statlig vs kommunal), men nedtrekket
+// her viser at funksjonaliteten er klar naar mer detaljerte deflatorer
+// per postgruppe blir tilgjengelig.
+const POSTGRUPPER = [
+  {
+    id: "drift",
+    navn: "Utgifter til drift (01–29)",
+    deflator: "statlig",
+    postnr: "01-29",
+  },
+  {
+    id: "investering",
+    navn: "Utgifter til investeringer (30–49)",
+    deflator: "statlig",
+    postnr: "30-49",
+  },
+  {
+    id: "overforing-stat",
+    navn: "Overføringer til andre statsregnskap (50–59)",
+    deflator: "statlig",
+    postnr: "50-59",
+  },
+  {
+    id: "overforing-kommune",
+    navn: "Overføringer til kommuner og fylkeskommuner (60–69)",
+    deflator: "kommunal",
+    postnr: "60-69",
+  },
+  {
+    id: "overforing-andre",
+    navn: "Andre overføringer (70–89)",
+    deflator: "statlig",
+    postnr: "70-89",
+  },
+  {
+    id: "utlaan",
+    navn: "Utlån, kapitaltilskudd, aksjer (90–99)",
+    deflator: "statlig",
+    postnr: "90-99",
+  },
+];
+
 async function visPriskalkulator() {
   const oversikt = await hentOversikt();
   const meta = oversikt.metadata;
@@ -1612,37 +1731,37 @@ async function visPriskalkulator() {
   const fraAr = state.kalkFra ?? meta.start;
   const tilAr = state.kalkTil ?? meta.slutt;
   const belop = state.kalkBelop ?? 100000;
-  const deflatorType = state.kalkPo === 60 ? "kommunal" : "statlig";
+  const valgtPostgruppeId = state.kalkPostgruppe || "drift";
+  const valgtPostgruppe =
+    POSTGRUPPER.find((g) => g.id === valgtPostgruppeId) || POSTGRUPPER[0];
+  const deflatorType = valgtPostgruppe.deflator;
 
   const resultat = priskonvertering(meta.prisindeks, deflatorType, belop, fraAr, tilAr);
 
   const aarValg = (selected) =>
     aar.map((a) => `<option value="${a}" ${a === selected ? "selected" : ""}>${a}</option>`).join("");
 
-  const deflatorValg = `
-    <label class="kalkulator__felt">
-      <span class="filter-felt__etikett">Deflator-type</span>
-      <select id="kalk-deflator">
-        <option value="statlig" ${deflatorType === "statlig" ? "selected" : ""}>
-          Statsbudsjettets utgiftsdeflator (post 01–59, 70–89)
-        </option>
-        <option value="kommunal" ${deflatorType === "kommunal" ? "selected" : ""}>
-          Kommunal deflator (post 60–69)
-        </option>
-      </select>
-    </label>`;
+  const postgruppeOptions = POSTGRUPPER.map(
+    (g) =>
+      `<option value="${g.id}" ${
+        g.id === valgtPostgruppe.id ? "selected" : ""
+      }>${g.navn}</option>`
+  ).join("");
 
   const main = document.getElementById("hovedinnhold");
   main.innerHTML = `
     <section class="kalkulator" aria-labelledby="kalk-tittel">
       <header class="seksjon-header">
         <p class="seksjon-kicker">Verktøy</p>
-        <h2 id="kalk-tittel">Priskalkulator</h2>
+        <h2 id="kalk-tittel">Realverdikalkulator per post</h2>
         <p class="seksjon-beskrivelse">
           Beregn hva et beløp i ett år tilsvarer i et annet år, justert
-          med Finansdepartementets utgiftsdeflator eller kommunal deflator.
-          Velg deflator-type etter postnummeret: 60–69-serien bruker
-          kommunal deflator; øvrige bruker statsbudsjettets utgiftsdeflator.
+          for prisstigning. Postgruppen styrer hvilken deflator som brukes.
+          Foreløpig anvendes to brede deflatorer i Finansdepartementet:
+          statsbudsjettets utgiftsdeflator for de fleste poster, og kommunal
+          deflator for overføringer til kommuner og fylkeskommuner (60–69).
+          Nedtrekket viser at kalkulatoren er klar til å håndtere finere
+          deflatorer per postgruppe når slike data blir tilgjengelig.
         </p>
       </header>
 
@@ -1673,7 +1792,14 @@ async function visPriskalkulator() {
           <select id="kalk-til">${aarValg(tilAr)}</select>
         </label>
 
-        ${deflatorValg}
+        <label class="kalkulator__felt kalkulator__felt--postgruppe">
+          <span class="filter-felt__etikett">Postgruppe</span>
+          <select id="kalk-postgruppe">${postgruppeOptions}</select>
+          <span class="filter-felt__hjelp">
+            Bruker ${deflatorType === "kommunal" ? "kommunal deflator" : "statsbudsjettets utgiftsdeflator"}
+            i denne versjonen.
+          </span>
+        </label>
       </form>
 
       <div class="kalkulator__resultat" id="kalk-resultat" aria-live="polite">
@@ -1715,21 +1841,18 @@ function bindKalkulatorUi() {
     const belopInput = document.getElementById("kalk-belop");
     const fraSelect = document.getElementById("kalk-fra");
     const tilSelect = document.getElementById("kalk-til");
-    const defSelect = document.getElementById("kalk-deflator");
+    const postgruppeSelect = document.getElementById("kalk-postgruppe");
     const belop = Number(belopInput.value);
     const fra = parseInt(fraSelect.value, 10);
     const til = parseInt(tilSelect.value, 10);
-    // Vi gjenbruker kalkPo-feltet til aa lagre deflator-valget:
-    // 60 = kommunal, 0 = statlig. Dette unngaar aa innfore et nytt
-    // URL-parameter for et binært valg.
-    const kalkPo = defSelect.value === "kommunal" ? 60 : null;
+    const postgruppe = postgruppeSelect ? postgruppeSelect.value : null;
     const naa = lesUrlTilstand();
     const ny = {
       ...naa,
       kalkBelop: Number.isFinite(belop) && belop >= 0 ? belop : null,
       kalkFra: fra,
       kalkTil: til,
-      kalkPo,
+      kalkPostgruppe: postgruppe,
     };
     const url = lagUrl(ny);
     window.history.replaceState(ny, "", url);

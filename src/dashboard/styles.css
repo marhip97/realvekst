@@ -926,6 +926,76 @@ code {
   cursor: not-allowed;
 }
 
+.drilldown-nav__rad--kategori {
+  border-block-start: 1px dashed var(--farge-kant);
+  padding-block-start: var(--avstand-m);
+  gap: var(--avstand-l);
+  align-items: center;
+}
+
+.drilldown-nav__type {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--avstand-m);
+}
+
+.drilldown-nav__type legend {
+  padding: 0;
+  margin-inline-end: var(--avstand-xs);
+  font-size: var(--font-storrelse-xs);
+  font-weight: var(--font-vekt-medium);
+  color: var(--farge-tekst);
+}
+
+.drilldown-nav__radioer {
+  display: flex;
+  gap: var(--avstand-xs);
+  flex-wrap: wrap;
+}
+
+.drilldown-nav__radio,
+.drilldown-nav__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avstand-xs);
+  font-size: var(--font-storrelse-xs);
+  padding: var(--avstand-xs) var(--avstand-s);
+  border: 1px solid var(--farge-kant);
+  border-radius: 999px;
+  background: var(--farge-overflate);
+  cursor: pointer;
+  transition: background var(--tid-rask) var(--easing),
+              border-color var(--tid-rask) var(--easing);
+}
+
+.drilldown-nav__radio:hover,
+.drilldown-nav__checkbox:hover {
+  border-color: var(--farge-primaer);
+  background: var(--farge-primaer-svak);
+}
+
+.drilldown-nav__radio:has(input:checked),
+.drilldown-nav__checkbox:has(input:checked) {
+  background: var(--farge-primaer-svak);
+  border-color: var(--farge-primaer);
+  color: var(--farge-primaer-mork);
+  font-weight: var(--font-vekt-medium);
+}
+
+.drilldown-nav__radio small,
+.drilldown-nav__checkbox small {
+  color: var(--farge-tekst-dempet);
+  font-weight: var(--font-vekt-normal);
+}
+
+.drilldown-nav__radio input,
+.drilldown-nav__checkbox input {
+  accent-color: var(--farge-primaer);
+}
+
 /* ---- Tabs (hovednavigasjon) ---- */
 
 .tabs {
