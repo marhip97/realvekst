@@ -46,8 +46,8 @@ from src.data.bevilgning import last_bevilgning
 PROSJEKT_ROT = Path(__file__).resolve().parents[2]
 DASHBOARD_DATA = PROSJEKT_ROT / "src" / "dashboard" / "data"
 
-DEFAULT_BASISAAR = 2024
-DEFAULT_START = 2014
+DEFAULT_BASISAAR = 2026
+DEFAULT_START = 2022
 DEFAULT_SLUTT = 2026
 
 
@@ -178,6 +178,18 @@ def _metadata(
     }
     if post_typer is not None:
         meta["post_typer"] = post_typer
+
+    # Prisindeksene eksporteres slik at frontend (priskalkulatoren) kan
+    # konvertere belop mellom aarstall uten aa lese rade-CSV.
+    from src.data.deflator import bygg_prisindeks
+
+    indeks = bygg_prisindeks(basisaar=basisaar)
+    meta["prisindeks"] = {
+        "basisaar": basisaar,
+        "aar": [int(a) for a in indeks["Ar"]],
+        "statlig": [float(v) for v in indeks["indeks_statlig"]],
+        "kommunal": [float(v) for v in indeks["indeks_kommunal"]],
+    }
     return meta
 
 

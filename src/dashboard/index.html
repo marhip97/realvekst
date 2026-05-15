@@ -25,6 +25,29 @@
         statsbudsjettets hierarki: departement, programområde og post.
       </p>
 
+      <nav aria-label="Hovednavigasjon" class="tabs" id="tabs" role="tablist">
+        <button
+          type="button"
+          class="tab tab--aktiv"
+          role="tab"
+          aria-selected="true"
+          data-tab="drilldown"
+          id="tab-drilldown"
+        >
+          Drilldown
+        </button>
+        <button
+          type="button"
+          class="tab"
+          role="tab"
+          aria-selected="false"
+          data-tab="priskalkulator"
+          id="tab-priskalkulator"
+        >
+          Priskalkulator
+        </button>
+      </nav>
+
       <nav aria-label="Brødsmulesti" class="brodsmule" id="brodsmule">
         <ol>
           <li aria-current="page">Alle departementer</li>
@@ -53,7 +76,26 @@
         </fieldset>
         <fieldset class="filter-felt filter-felt--periode">
           <legend class="filter-felt__etikett">Sammenligningsperiode</legend>
-          <div class="filter-periode">
+          <div class="periode-presets" id="periode-presets">
+            <button
+              type="button"
+              class="knapp knapp--sekundaer periode-preset"
+              data-preset="siste4"
+              aria-pressed="false"
+            >
+              Siste 4 år
+            </button>
+            <button
+              type="button"
+              class="knapp knapp--sekundaer periode-preset"
+              data-preset="tilpass"
+              aria-expanded="false"
+              aria-controls="filter-periode-tilpass"
+            >
+              Tilpass
+            </button>
+          </div>
+          <div class="filter-periode" id="filter-periode-tilpass" hidden>
             <label>
               <span class="filter-felt__hjelp">Fra</span>
               <select id="filter-fra-aar"></select>
@@ -91,6 +133,12 @@
       </div>
       <p class="filter-status" id="filter-status" aria-live="polite"></p>
     </section>
+
+    <section
+      class="drilldown-nav"
+      id="drilldown-nav"
+      aria-label="Hurtig drilldown-navigasjon"
+    ></section>
 
     <main id="hovedinnhold" aria-live="polite" aria-busy="true">
       <p class="laster">Laster data …</p>

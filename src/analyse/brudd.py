@@ -30,18 +30,24 @@ import pandas as pd
 # Listen er forankret i prototype-analysen og dokumentert i STATUS.md.
 STRUKTURELLE_BRUDD_DEPARTEMENT: Mapping[str, str] = {
     "Energidepartementet": (
-        "Energidepartementet er en omorganisering. Tidsserien viser "
-        "negativ realvekst fordi det historiske området ikke er sammenlignbart. "
-        "Bruk filtreringsfunksjonen for tverrgående analyser."
+        "Energidepartementet ble etablert 1. januar 2024 ved utskilling fra "
+        "Olje- og energidepartementet. Tidsserien inneholder dessuten netto "
+        "kapitaltilskudd/utlån (post 90-serien) som gir store negative "
+        "summer. Realvekst-tallet er ikke direkte sammenlignbart med øvrige "
+        "departementer. Bruk drilldown på programområde- og post-nivå for "
+        "konsistente sammenligninger."
     ),
     "Nærings- og fiskeridepartementet": (
-        "Strukturelt brudd: omorganisering med endret virkeområde gjør at "
-        "tidsserien gir et meningsløst negativt realvekst-tall. Tallet skal "
-        "ikke tolkes som faktisk nedgang."
+        "Departementet aggregerer netto kapitaltilskudd/utlån (post 90-serien) "
+        "som gir store negative summer i flere år. Realvekst-tallet på "
+        "departementsnivå er derfor ikke meningsfullt. Drill ned til "
+        "programområde- eller post-nivå for å se reelle bevegelser."
     ),
     "Digitaliserings- og forvaltningsdepartementet": (
-        "Departementet eksisterte ikke i 2014. Realvekst over hele perioden "
-        "er udefinert og må markeres som strukturelt brudd."
+        "Departementet ble etablert 1. januar 2024 ved utskilling fra "
+        "Kommunal- og distriktsdepartementet. Realvekst over en periode "
+        "som krysser etableringsåret er ikke definert. Velg en periode "
+        "fra 2024 og framover, eller drill ned til underliggende poster."
     ),
 }
 
