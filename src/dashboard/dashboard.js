@@ -1126,7 +1126,9 @@ async function visNiva1(dep_id) {
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerTidsserie("tidsserie-graf", visTidsserieDep);
+  rendrerTidsserie("tidsserie-graf", visTidsserieDep, {
+    rebaselineTilForsteAar: true,
+  });
   if (filtrerteProgramomraader.length > 0) {
     rendrerToppliste("po-graf", po_rader);
   }
@@ -1255,7 +1257,9 @@ async function visNiva2(dep_id, po_nr) {
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
 
-  rendrerTidsserie("tidsserie-graf", visTidsserie);
+  rendrerTidsserie("tidsserie-graf", visTidsserie, {
+    rebaselineTilForsteAar: true,
+  });
   if (filtrertePoster.length > 0) {
     rendrerToppliste("poster-graf", post_rader);
     document.getElementById("poster-graf").on("plotly_click", (ev) => {
@@ -1758,7 +1762,7 @@ async function rendreDrilldownNav() {
           </label>
           <label class="drilldown-nav__checkbox">
             <input type="checkbox" id="dd-p90" ${p90 ? "checked" : ""}>
-            <span>Inkluder 90-poster, låne- og petroleumstransaksjoner <small>(utlån, kapitaltilskudd, SPU-overføringer, petroleumsskatt, Equinor-utbytte mv.)</small></span>
+            <span>Inkluder låne- og petroleumstransaksjoner <small>(utlån, kapitaltilskudd, SPU-overføringer, petroleumsskatt, Equinor-utbytte mv.)</small></span>
           </label>
         </div>
       </fieldset>
