@@ -50,16 +50,30 @@ DEFAULT_BASISAAR = 2026
 DEFAULT_START = 2022
 DEFAULT_SLUTT = 2026
 
-# Poster som ekskluderes fra aggregert realvekstanalyse paa samlet
-# statsbudsjett-niva og departements-niva. Beholdes i datasettet slik
-# at brukeren kan drilldowne til posten, men holdes ute av summene
-# fordi de ikke er meningsfulle aa inkludere i realvekstanalyse.
-#
-# 280050: Statens pensjonsfond utland, post 50 'Overforing til fondet'.
-#         Belopet svinger voldsomt aar til aar (oljepris-avhengig) og
-#         representerer en finansiell overforing, ikke ordinaer
-#         bevilgning til formaal.
-EKSKLUDERTE_POST_IDS = {280050}
+# Laane- og petroleumstransaksjoner som ekskluderes fra realvekst-
+# aggregat naar brukeren har 90-post-filteret av (default). Disse er
+# enten finansielle overforinger til/fra Statens pensjonsfond utland,
+# petroleumsrelaterte inntekter/utgifter, eller laanetransaksjoner —
+# alle av typer som forvrenger realvekst-tall hvis de inkluderes.
+# Postene beholdes i datasettet og kan inkluderes via toggle.
+LPT_POST_IDS = {
+    # Utgift
+    244030,  # SDOE - investeringer
+    280050,  # Overforing til Statens pensjonsfond utland
+    280096,  # Finansposter overfort til fondet
+    # Inntekt
+    544024,  # SDOE - driftsresultat
+    544030,  # SDOE - avskrivninger
+    544080,  # SDOE - renter av statens kapital
+    550771,  # Petroleumsskatt - ordinaer
+    550772,  # Petroleumsskatt - saerskatt paa oljeinntekter
+    550774,  # Petroleumsskatt - arealavgift mv.
+    550870,  # CO2-avgift petroleum
+    550970,  # NOx-avgift petroleum
+    568585,  # Utbytte Equinor ASA
+    580050,  # Overforing fra Statens pensjonsfond utland
+    599990,  # Statslaanemidler
+}
 
 
 def _aarskolonne(df: pd.DataFrame) -> str:
@@ -115,29 +129,43 @@ def bygg_oversikt(
     bev = last_bevilgning()
     bev_reell = beregn_reell_bevilgning(bev, basisaar=basisaar)
     post_typer = _distinkte_post_typer(bev_reell)
-    # Eksluder de ekskluderte post-id-ene fra departement-aggregat slik
-    # at realvekst-tall paa nivaa 0-tabellen ikke domineres av f.eks.
-    # overforinger til Statens pensjonsfond utland.
-    bev_for_aggregat = bev_reell[~bev_reell["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
-    dep = aggreger_per_departement(bev_for_aggregat)
+    # 'dep' = aggregat med alle poster. Sammen med 'dep_uten_lpt'
+    # eksponeres begge variantene slik at frontend kan toggle.
+    er_90 = bev_reell["post_nr"].between(90, 99)
+    er_lpt = bev_reell["Post_id"].isin(LPT_POST_IDS)
+    bev_uten_lpt = bev_reell[~(er_90 | er_lpt)]
+    dep = aggreger_per_departement(bev_reell)
     dep = marker_brudd_departement(dep)
+    dep_uten_lpt = aggreger_per_departement(bev_uten_lpt)
 
+    # Realvekst paa nivaa 0-topplista beregnes fra dep_uten_lpt slik at
+    # topp 10-rangering ikke domineres av LPT-svingninger.
     realvekst = realvekst_for_periode(
-        dep,
+        dep_uten_lpt,
         id_kolonner=["Fagdepartement_id", "Fagdepartement"],
         start=start,
         slutt=slutt,
     )
+    # Brudd-info skal være på samme indekserings-grunnlag som realvekst.
+    dep_uten_lpt = marker_brudd_departement(dep_uten_lpt)
 
     aar_kol = "Ar"
     departementer = []
     for _, rad in realvekst.iterrows():
         dep_id = int(rad["Fagdepartement_id"])
         navn = rad["Fagdepartement"]
+        # tidsserie = alle poster (matcher sum av programkategorier).
+        # tidsserie_uten_lpt = uten 90-poster og LPT (default visning).
         tidsserie_rader = dep[dep["Fagdepartement_id"] == dep_id].sort_values(aar_kol)
         tidsserie = _tidsserie_fra_aggregert(tidsserie_rader, aar_kol)
+        tidsserie_uten_lpt_rader = dep_uten_lpt[
+            dep_uten_lpt["Fagdepartement_id"] == dep_id
+        ].sort_values(aar_kol)
+        tidsserie_uten_lpt = _tidsserie_fra_aggregert(
+            tidsserie_uten_lpt_rader, aar_kol
+        )
 
-        brudd_rad = dep[dep["Fagdepartement_id"] == dep_id].iloc[0]
+        brudd_rad = dep_uten_lpt[dep_uten_lpt["Fagdepartement_id"] == dep_id].iloc[0]
         har_brudd = bool(brudd_rad["har_strukturelt_brudd"])
         brudd_beskrivelse = (
             brudd_rad["brudd_beskrivelse"]
@@ -161,6 +189,7 @@ def bygg_oversikt(
                 "har_strukturelt_brudd": har_brudd,
                 "brudd_beskrivelse": brudd_beskrivelse,
                 "tidsserie": tidsserie,
+                "tidsserie_uten_lpt": tidsserie_uten_lpt,
                 "post_typer": post_typer_for_dep,
             }
         )
@@ -177,19 +206,21 @@ def bygg_oversikt(
     # Brukes på nivå 0 i frontend for å vise samlet realvekst.
     # Kapittel 0001-2999 = utgift, 3000-5999 = inntekt; post 90-99 er
     # utlån/kapitaltilskudd som default ekskluderes.
-    # EKSKLUDERTE_POST_IDS (f.eks. 280050 Overforing til SPU) holdes
-    # ute av samlet-aggregat fordi de ikke er meningsfulle for realvekst.
-    bev_aggregat = bev_reell[~bev_reell["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
+    # 'uten90'-variantene ekskluderer 90-postene OG alle LPT-postene
+    # (låne- og petroleumstransaksjoner). 'med90'-variantene inkluderer
+    # alt slik at brukeren kan toggle.
+    er_90 = bev_reell["post_nr"].between(90, 99)
+    er_lpt = bev_reell["Post_id"].isin(LPT_POST_IDS)
     samlet = {}
     for type_navn, kap_filter in [
-        ("utgift", bev_aggregat["kapittel_nr"] < 3000),
-        ("inntekt", bev_aggregat["kapittel_nr"] >= 3000),
+        ("utgift", bev_reell["kapittel_nr"] < 3000),
+        ("inntekt", bev_reell["kapittel_nr"] >= 3000),
     ]:
-        for p90_navn, post_filter in [
-            ("uten90", bev_aggregat["post_nr"] < 90),
-            ("med90", pd.Series(True, index=bev_aggregat.index)),
+        for p90_navn, ekskluderings_filter in [
+            ("uten90", ~(er_90 | er_lpt)),
+            ("med90", pd.Series(True, index=bev_reell.index)),
         ]:
-            del_df = bev_aggregat[kap_filter & post_filter]
+            del_df = bev_reell[kap_filter & ekskluderings_filter]
             agg = (
                 del_df.groupby(aar_kol, as_index=False)
                 .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
@@ -200,7 +231,7 @@ def bygg_oversikt(
 
     meta = _metadata(basisaar, start, slutt, post_typer=post_typer)
     meta["samlet"] = samlet
-    meta["ekskluderte_post_ids"] = sorted(EKSKLUDERTE_POST_IDS)
+    meta["lpt_post_ids"] = sorted(LPT_POST_IDS)
     return {
         "metadata": meta,
         "departementer": departementer,
@@ -266,18 +297,25 @@ def bygg_departement(
 
     dep_navn = dep_data["Fagdepartement"].iloc[0]
 
-    # Aggregat-data for departement og programkategori-tidsserier
-    # ekskluderer EKSKLUDERTE_POST_IDS. Postene beholdes likevel i
-    # poster-listen slik at brukeren kan drilldowne.
-    dep_aggregat_data = dep_data[~dep_data["Post_id"].isin(EKSKLUDERTE_POST_IDS)]
+    # To varianter: tidsserie inkluderer alle poster (sum av program-
+    # kategori-tidsseriene), tidsserie_uten_lpt ekskluderer 90-poster
+    # og LPT-poster (default visning).
+    er_90_dep = dep_data["post_nr"].between(90, 99)
+    er_lpt_dep = dep_data["Post_id"].isin(LPT_POST_IDS)
+    dep_uten_lpt_data = dep_data[~(er_90_dep | er_lpt_dep)]
 
-    # Departementets tidsserie
     dep_serie = (
-        dep_aggregat_data.groupby(aar_kol, as_index=False)
+        dep_data.groupby(aar_kol, as_index=False)
         .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
         .rename(columns={aar_kol: "Ar"})
     )
     dep_tidsserie = _tidsserie_fra_aggregert(dep_serie)
+    dep_serie_uten_lpt = (
+        dep_uten_lpt_data.groupby(aar_kol, as_index=False)
+        .agg(nominell=("Bevilgning_beløp", "sum"), reell=("Bevilgning_reell", "sum"))
+        .rename(columns={aar_kol: "Ar"})
+    )
+    dep_tidsserie_uten_lpt = _tidsserie_fra_aggregert(dep_serie_uten_lpt)
 
     # Brudd-info
     dep_med_brudd = marker_brudd_departement(
@@ -286,15 +324,11 @@ def bygg_departement(
     har_brudd = bool(dep_med_brudd["har_strukturelt_brudd"].iloc[0])
     brudd_beskrivelse = dep_med_brudd["brudd_beskrivelse"].iloc[0] if har_brudd else None
 
-    # Programkategorier under departementet. Per brukerønske (PR der
-    # 'programområde' ble erstattet av 'programkategori' i dashbordet)
-    # aggregerer vi nå på det finere kategori-nivået. JSON-feltet
-    # heter fortsatt 'programomraader' av historiske grunner, men
-    # innholdet er programkategorier; frontend viser 'Programkategori'.
-    # Programkategori-tidsserier inkluderer alle poster, ogsa de som
-    # ekskluderes paa departement-/samlet-niva. Brukeren forventer aa
-    # se ekte tall paa drilldown-niva (f.eks. 'Statens pensjonsfond
-    # utland' = post 280050 selv).
+    # Programkategorier under departementet. JSON-feltet heter
+    # 'programomraader' av historiske grunner, men innholdet er
+    # programkategorier; frontend viser 'Programkategori'.
+    # Inkluderer alle poster slik at sum av programkategorier =
+    # dep.tidsserie og post-sum = programkategori.tidsserie.
     po_agg = aggreger_per_programkategori(dep_data)
     # Grupper kun på id; tekstvariasjoner ('m.v.' vs 'mv.') finnes i
     # rådata og gir dupliserte rader hvis vi grupperer på id+navn.
@@ -395,6 +429,7 @@ def bygg_departement(
             "har_strukturelt_brudd": har_brudd,
             "brudd_beskrivelse": brudd_beskrivelse,
             "tidsserie": dep_tidsserie,
+            "tidsserie_uten_lpt": dep_tidsserie_uten_lpt,
         },
         "programomraader": programomraader,
     }

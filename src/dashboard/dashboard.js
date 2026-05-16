@@ -410,27 +410,40 @@ function postgruppeForPost(post) {
   return "Utlån, kapitaltilskudd, aksjer (90–99)";
 }
 
+// Laane- og petroleumstransaksjoner som default ekskluderes fra
+// aggregert realvekstanalyse. Inkluderes naar p90-toggle er paa.
+// Liste maa holdes synkronisert med LPT_POST_IDS i bygg_datasett.py.
+const LPT_POST_IDS_FRONTEND = new Set([
+  244030,  // SDOE - investeringer
+  280050,  // Overforing til SPU
+  280096,  // Finansposter overfort til fondet
+  544024, 544030, 544080,  // SDOE-inntekter
+  550771, 550772, 550774,  // Petroleumsskatt
+  550870,  // CO2-avgift petroleum
+  550970,  // NOx-avgift petroleum
+  568585,  // Utbytte Equinor
+  580050,  // Overforing fra SPU
+  599990,  // Statslaanemidler
+]);
+
 function postKategoriMatcher(post, type, inkluder90) {
   // Norsk statsbudsjett: kapittel 0001-2999 = utgift, 3000-5999 = inntekt.
-  // 90-postene (post_nr 90-99) er utlaan/kapitaltilskudd og default
-  // ekskludert fordi netto-tall kan vaere negative og bryter
-  // realvekst-tolkningen.
+  // 'inkluder90'-toggle styrer baade 90-postene (post_nr 90-99) og
+  // LPT-postene (laane- og petroleumstransaksjoner). Default ekskludert
+  // fordi netto-tall kan vaere negative og bryter realvekst-tolkningen.
   const erUtgift = post.kapittel_nr < 3000;
   const er90 = post.post_nr >= 90 && post.post_nr <= 99;
+  const erLpt = LPT_POST_IDS_FRONTEND.has(post.post_id);
   if (type === "utgift" && !erUtgift) return false;
   if (type === "inntekt" && erUtgift) return false;
-  if (er90 && !inkluder90) return false;
+  if ((er90 || erLpt) && !inkluder90) return false;
   return true;
 }
 
-// Poster som ekskluderes fra aggregert realvekstanalyse paa samlet
-// statsbudsjett-niva og departements-niva. Brukes paa klient-siden i
-// visNiva1 og visNiva2. Listen synkroniseres med EKSKLUDERTE_POST_IDS
-// i src/data/bygg_datasett.py.
-const EKSKLUDERTE_POST_IDS_AGGREGAT = new Set([280050]);
-
 function postBidrarTilAggregat(post) {
-  return !EKSKLUDERTE_POST_IDS_AGGREGAT.has(post.post_id);
+  // Alle filtre styres via postKategoriMatcher; denne helperen er
+  // beholdt for bakoverkompatibilitet og returnerer alltid true.
+  return true;
 }
 
 function terskelMatcher(element, terskel) {
@@ -505,19 +518,36 @@ function rendrerTidsserie(elementId, tidsserie, opts = {}) {
   const dempetFarge = lesCssToken("--farge-tekst-dempet") || "#6e6e6e";
   const kantFarge = lesCssToken("--graf-rutenett") || "#d4d4d4";
   const fontStack = lesCssToken("--font-stack-sans") || "system-ui, sans-serif";
+  const { rebaselineTilForsteAar = false } = opts;
 
   const aar = tidsserie.map((p) => p.ar);
-  const nominell = tidsserie.map((p) =>
+  let nominell = tidsserie.map((p) =>
     p.nominell !== null ? p.nominell / SI_NOK_TIL_MRD : null
   );
-  const reell = tidsserie.map((p) =>
+  let reell = tidsserie.map((p) =>
     p.reell !== null ? p.reell / SI_NOK_TIL_MRD : null
   );
 
+  // Naar rebaselineTilForsteAar = true (brukes paa post-grafer) skalerer
+  // vi reell-serien slik at den moter nominell i grafens forste aar.
+  // Da kan brukeren lese relativ utvikling direkte ut av grafen i
+  // stedet for aa sammenligne to skalaer mot ulike basispunkter.
+  if (rebaselineTilForsteAar && nominell.length > 0) {
+    const forsteNom = nominell.find((v) => v !== null && v !== 0);
+    const forsteReell = reell.find((v) => v !== null && v !== 0);
+    if (forsteNom && forsteReell) {
+      const faktor = forsteNom / forsteReell;
+      reell = reell.map((v) => (v === null ? null : v * faktor));
+    }
+  }
+
+  const reellNavn = rebaselineTilForsteAar
+    ? "Reell (skalert til samme nivå som nominell i startåret)"
+    : "Reell";
   const traceReell = {
     type: "scatter",
     mode: "lines+markers",
-    name: "Reell (2024-kroner)",
+    name: reellNavn,
     x: aar,
     y: reell,
     line: { color: primaerFarge, width: 2.5 },
@@ -846,8 +876,12 @@ async function visNiva0() {
   const { q, pt, tr } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
+  const { p90: p90AlleDep } = lesUrlTilstand();
   const alleDeps = data.departementer.map((d) => {
-    const rv = realvekstFraTidsserie(d.tidsserie, periode.fra, periode.til);
+    // Naar 90-toggle er av (default), bruker vi dep.tidsserie_uten_lpt
+    // som ekskluderer 90-poster og laane-/petroleumstransaksjoner.
+    const serie = p90AlleDep ? d.tidsserie : d.tidsserie_uten_lpt || d.tidsserie;
+    const rv = realvekstFraTidsserie(serie, periode.fra, periode.til);
     return {
       ...d,
       realvekst_pst: rv.realvekst_pst,
@@ -910,7 +944,7 @@ async function visNiva0() {
     typeValg === "inntekt"
       ? "Realvekst statsinntekter"
       : "Realvekst statsutgifter";
-  const samletBeskrivelse = `${typeValg === "inntekt" ? "Inntektssiden" : "Utgiftssiden"} av statsbudsjettet${p90Valg ? "" : ", ekskl. 90-poster (utlån/kapitaltilskudd)"}.`;
+  const samletBeskrivelse = `${typeValg === "inntekt" ? "Inntektssiden" : "Utgiftssiden"} av statsbudsjettet${p90Valg ? "" : ", ekskl. 90-poster og låne-/petroleumstransaksjoner"}.`;
 
   // Topp 10 departementer (ekskl. strukturelle brudd) for stolpegrafen
   // og hovedtabellen. Departementer med brudd vises i egen seksjon.
@@ -1121,7 +1155,7 @@ async function visNiva2(dep_id, po_nr) {
     visIkkeFunnet(`Programkategori ${po_nr} finnes ikke under ${dep.navn}.`);
     return;
   }
-  const { q, pt, tr, type, p90 } = lesUrlTilstand();
+  const { q, pt, tr, type, p90, kapittel } = lesUrlTilstand();
   const periode = gjeldendePeriode(data.metadata);
   const qNorm = normaliserSoek(q);
   const allePoster = po.poster.map((p) => ({
@@ -1131,6 +1165,7 @@ async function visNiva2(dep_id, po_nr) {
   }));
   const filtrertePoster = allePoster
     .filter((p) => postKategoriMatcher(p, type, p90))
+    .filter((p) => kapittel === null || p.kapittel_nr === kapittel)
     .filter((p) => postMatcher(p, qNorm, pt))
     .filter((p) => terskelMatcher(p, tr));
   oppdaterFilterStatus(
@@ -1321,7 +1356,11 @@ async function visNiva3(dep_id, po_nr, post_id) {
     </section>
   `;
   document.getElementById("hovedinnhold").innerHTML = html;
-  rendrerTidsserie("tidsserie-graf", visTidsserie);
+  // Post-grafen skalerer reell-linja slik at den moter nominell i
+  // startaret, saa brukeren ser relativ utvikling direkte.
+  rendrerTidsserie("tidsserie-graf", visTidsserie, {
+    rebaselineTilForsteAar: true,
+  });
 }
 
 // --- HTML-fragmentbyggere ---
@@ -1719,7 +1758,7 @@ async function rendreDrilldownNav() {
           </label>
           <label class="drilldown-nav__checkbox">
             <input type="checkbox" id="dd-p90" ${p90 ? "checked" : ""}>
-            <span>Inkluder 90-poster <small>(utlån/kapitaltilskudd)</small></span>
+            <span>Inkluder 90-poster, låne- og petroleumstransaksjoner <small>(utlån, kapitaltilskudd, SPU-overføringer, petroleumsskatt, Equinor-utbytte mv.)</small></span>
           </label>
         </div>
       </fieldset>
