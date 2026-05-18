@@ -11,7 +11,7 @@ import pytest
 
 from src.analyse.realvekst import beregn_reell_bevilgning
 from src.data.bevilgning import last_bevilgning
-from src.data.bygg_datasett import bygg_departement, bygg_oversikt
+from src.data.bygg_datasett import bygg_departement, bygg_oversikt, skriv_alle
 
 
 @pytest.fixture(scope="module")
@@ -287,6 +287,53 @@ class TestBygDepartement:
             )
             po_2026 = next(t["reell"] for t in po["tidsserie"] if t["ar"] == 2026)
             assert abs(post_sum_2026 - po_2026) < 1.0
+
+
+class TestSkrivAlleBasisaarKonsistens:
+    """Regresjon: data og metadata fra `skriv_alle` skal referere til samme basisår.
+
+    Tidligere kalte `skriv_alle` `beregn_reell_bevilgning(...)` uten å sende
+    basisaar, slik at reell-kolonnen ble beregnet med deflator-modulens default
+    (2024) mens metadata ble skrevet med bygg_datasett-modulens default (2026).
+    Resultatet var at frontend viste "I 2026-kroner" mens tallene faktisk var i
+    2024-kroner, og reell != nominell i 2026.
+    """
+
+    @pytest.fixture(scope="class")
+    def skrevet(self, tmp_path_factory):
+        utfolder = tmp_path_factory.mktemp("dashboard_data")
+        skriv_alle(utfolder=utfolder, basisaar=2026, start=2022, slutt=2026)
+        return utfolder
+
+    def test_oversikt_reell_lik_nominell_i_basisaar(self, skrevet):
+        import json
+
+        oversikt = json.loads((skrevet / "oversikt.json").read_text(encoding="utf-8"))
+        basisaar = oversikt["metadata"]["basisaar"]
+        for navn, serie in oversikt["metadata"]["samlet"].items():
+            rad = next((p for p in serie if p["ar"] == basisaar), None)
+            assert rad is not None, f"Mangler basisår i samlet/{navn}"
+            assert abs(rad["nominell"] - rad["reell"]) < 1.0, (
+                f"reell != nominell i basisår for samlet/{navn}: "
+                f"nom={rad['nominell']:.0f}, reell={rad['reell']:.0f}"
+            )
+
+    def test_departementsfil_reell_lik_nominell_i_basisaar(self, skrevet):
+        import json
+
+        for sti in sorted((skrevet / "departementer").glob("*.json")):
+            data = json.loads(sti.read_text(encoding="utf-8"))
+            basisaar = data["metadata"]["basisaar"]
+            navn = data["departement"]["navn"]
+            rad = next(
+                (p for p in data["departement"]["tidsserie"] if p["ar"] == basisaar),
+                None,
+            )
+            assert rad is not None, f"{navn}: mangler basisår {basisaar} i tidsserie"
+            assert abs(rad["nominell"] - rad["reell"]) < 1.0, (
+                f"{navn}: reell != nominell i basisår {basisaar} "
+                f"(nom={rad['nominell']:.0f}, reell={rad['reell']:.0f})"
+            )
 
 
 class TestBygDepartementUgyldigId:
