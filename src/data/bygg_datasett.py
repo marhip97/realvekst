@@ -435,21 +435,30 @@ def bygg_departement(
     }
 
 
-def skriv_alle(utfolder: Path = DASHBOARD_DATA) -> list[Path]:
+def skriv_alle(
+    utfolder: Path = DASHBOARD_DATA,
+    basisaar: int = DEFAULT_BASISAAR,
+    start: int = DEFAULT_START,
+    slutt: int = DEFAULT_SLUTT,
+) -> list[Path]:
     """Generér og skriv alle JSON-filer for frontend.
 
     Skriver oversikt.json + én fil per departement i departementer/.
     Returnerer listen over skrevne filer.
+
+    Basisår, start og slutt sendes eksplisitt til både
+    `beregn_reell_bevilgning`, `bygg_oversikt` og `bygg_departement` slik at
+    reell-kolonnen og metadata alltid refererer til samme basisår.
     """
     utfolder.mkdir(parents=True, exist_ok=True)
     (utfolder / "departementer").mkdir(exist_ok=True)
     skrevne = []
 
     # Forbered én gang og gjenbruk
-    bev_reell = beregn_reell_bevilgning(last_bevilgning())
+    bev_reell = beregn_reell_bevilgning(last_bevilgning(), basisaar=basisaar)
 
     # Oversikt
-    oversikt = bygg_oversikt()
+    oversikt = bygg_oversikt(basisaar=basisaar, start=start, slutt=slutt)
     sti = utfolder / "oversikt.json"
     sti.write_text(
         json.dumps(oversikt, ensure_ascii=False, indent=2),
@@ -461,7 +470,13 @@ def skriv_alle(utfolder: Path = DASHBOARD_DATA) -> list[Path]:
     # store og diffs blir uleselige uansett — fokus er rask nedlasting.
     dep_ider = sorted(bev_reell["Fagdepartement_id"].unique())
     for dep_id in dep_ider:
-        data = bygg_departement(bev_reell, dep_id=int(dep_id))
+        data = bygg_departement(
+            bev_reell,
+            dep_id=int(dep_id),
+            basisaar=basisaar,
+            start=start,
+            slutt=slutt,
+        )
         sti = utfolder / "departementer" / f"{int(dep_id)}.json"
         sti.write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")),
